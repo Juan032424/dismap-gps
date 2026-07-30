@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Documentación técnica · DISMAP GPS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%231E7FEF'/%3E%3Cpath d='M20 8c-4.4 0-8 3.4-8 7.6 0 5.4 8 12.4 8 12.4s8-7 8-12.4C28 11.4 24.4 8 20 8z' fill='white'/%3E%3Ccircle cx='20' cy='15.5' r='3.2' fill='%2316B364'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <svg width="38" height="38" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <path d="M27.5 9.5a6.4 6.4 0 0 1 5.4 5.4" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M27 4.6a11 11 0 0 1 9 9" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round" opacity="0.45"/>
+      <path d="M16 3.5C9.9 3.5 5 8.2 5 14.3c0 7.9 11 21 11 21s11-13.1 11-21C27 8.2 22.1 3.5 16 3.5Z" fill="#1E7FEF"/>
+      <circle cx="16" cy="14.2" r="4.6" fill="#16B364"/>
+    </svg>
+    <div class="brand">DIS<span>MAP</span><small>Tu flota segura y bajo control</small></div>
+    <a class="back" href="index.html">← Documentación</a>
+  </div>
+
+  <div class="printbar"><button type="button" onclick="window.print()">Guardar como PDF</button></div>
+
+  <h1>Documentación técnica</h1>
+  <p class="lede">Qué envía el GPS, qué responde el servidor, cómo se interpreta cada trama y la
+    referencia de la API. Todos los ejemplos son capturas reales del sistema funcionando.</p>
+
+  <h2>Arquitectura en una vista</h2>
+  <pre class="plain"><code>   ST-901 ──TCP:5013──▶ Servidor TCP ──▶ Adapter H02 (parser)
+                                              │
+                        ┌─────────────────────┼──────────────────────┐
+                        ▼                     ▼                      ▼
+              PostgreSQL + PostGIS         Redis              Socket.IO
+              (histórico permanente)   (última posición)   (mapa en vivo)
+                        │
+                        ▼
+              Motor de eventos ──▶ alertas (exceso, SOS, geocercas…)</code></pre>
+  <p>El navegador nunca habla con el GPS: el equipo reporta al servidor por TCP y el panel recibe
+    los datos ya procesados por WebSocket. Son dos canales independientes.</p>
+
+  <div class="card">
+    <div class="grid">
+      <div class="field"><div class="k">Puerto web / API</div><div class="v">80 → 3000</div></div>
+      <div class="field"><div class="k">Puerto GPS (TCP)</div><div class="v">5013</div></div>
+      <div class="field"><div class="k">Protocolo</div><div class="v">H02 (texto ASCII)</div></div>
+    </div>
+  </div>
+
+  <h2>Qué pasa cuando registras un dispositivo</h2>
+  <p>Al llenar el formulario de <strong>Administración → Dispositivos</strong>, el panel envía:</p>
+  <pre><code><span class="c">POST /devices</span>
+<span class="c">Authorization: Bearer &lt;token&gt;</span>
+{
+  <span class="k">"unique_id"</span>: <span class="s">"9170004321"</span>,
+  <span class="k">"plate"</span>: <span class="s">"DOC001"</span>,
+  <span class="k">"name"</span>: <span class="s">"Camion Documentacion"</span>,
+  <span class="k">"model"</span>: <span class="s">"ST-901"</span>,
+  <span class="k">"sim_number"</span>: <span class="s">"3009998877"</span>,
+  <span class="k">"apn"</span>: <span class="s">"internet.tigo"</span>,
+  <span class="k">"driver"</span>: <span class="s">"Pedro Ruiz"</span>,
+  <span class="k">"speed_limit"</span>: <span class="s">70</span>
+}</code></pre>
+
+  <p>Y el servidor responde con la ficha creada (captura real):</p>
+  <pre><code>{
+  <span class="k">"id"</span>: <span class="s">3259</span>,
+  <span class="k">"unique_id"</span>: <span class="s">"9170004321"</span>,
+  <span class="k">"name"</span>: <span class="s">"Camion Documentacion"</span>,
+  <span class="k">"plate"</span>: <span class="s">"DOC001"</span>,
+  <span class="k">"model"</span>: <span class="s">"ST-901"</span>,
+  <span class="k">"protocol"</span>: <span class="s">"h02"</span>,
+  <span class="k">"battery_level"</span>: <span class="s">null</span>,
+  <span class="k">"speed_limit"</span>: <span class="s">70</span>,
+  <span class="k">"driver"</span>: <span class="s">"Pedro Ruiz"</span>,
+  <span class="k">"notes"</span>: <span class="s">null</span>,
+  <span class="k">"sim_number"</span>: <span class="s">"3009998877"</span>,
+  <span class="k">"apn"</span>: <span class="s">"internet.tigo"</span>,
+  <span class="k">"provisioned"</span>: <span class="s">true</span>,
+  <span class="k">"active"</span>: <span class="s">true</span>,
+  <span class="k">"created_at"</span>: <span class="s">"2026-07-25T03:41:38.063Z"</span>,
+  <span class="k">"last_seen"</span>: <span class="s">null</span>
+}</code></pre>
+
+  <ul class="plain">
+    <li><code>id</code> — número interno que usa el sistema para historiales y reportes.</li>
+    <li><code>provisioned: true</code> — lo registró una persona (no se auto-registró solo).</li>
+    <li><code>battery_level: null</code> y <code>last_seen: null</code> — todavía no se ha conectado.</li>
+    <li>Si vuelves a registrar el mismo <code>unique_id</code>, no se duplica: se actualiza la ficha.</li>
+  </ul>
+
+  <h2>Qué pasa cuando el GPS se conecta</h2>
+  <p>Esta es una captura real del diálogo TCP entre un ST‑901 y el servidor:</p>
+  <pre class="plain"><code><span class="c">&gt;&gt;&gt; TCP CONECTADO</span>
+EQUIPO  → *HQ,9170004321,HTBT,87#
+SERVIDOR ← *HQ,9170004321,HTBT,034456#
+EQUIPO  → *HQ,9170004321,V1,034256,A,1024.1200,N,07530.7400,W,23.5,187,250726,FFFFFBFF#
+EQUIPO  → *HQ,9170004321,V1,034357,A,1024.3000,N,07530.9000,W,60.0,190,250726,FFFFFBFF#
+<span class="c">&gt;&gt;&gt; TCP CERRADO</span></code></pre>
+
+  <p>Puntos importantes de ese diálogo:</p>
+  <ul class="plain">
+    <li>El equipo abre <strong>una conexión TCP</strong> y la mantiene abierta enviando tramas.</li>
+    <li>Al <strong>heartbeat</strong> el servidor sí responde (le confirma que está vivo). Es lo
+      único que responde.</li>
+    <li>A las <strong>posiciones no responde nada</strong>: las recibe, procesa y guarda. El equipo
+      no espera confirmación.</li>
+    <li>Si pasan <strong>10 minutos sin datos</strong>, el servidor cierra la conexión; el equipo
+      vuelve a conectarse solo en su siguiente reporte.</li>
+  </ul>
+
+  <h3>Los dos tipos de mensaje</h3>
+  <h4 style="margin:1.2rem 0 .5rem;font-size:.95rem">1. Heartbeat (latido)</h4>
+  <pre class="plain"><code>*HQ,&lt;id&gt;,HTBT,&lt;batería %&gt;#
+
+Ejemplo:  *HQ,9170004321,HTBT,87#
+El servidor lo confirma:  *HQ,9170004321,HTBT,&lt;hora UTC HHMMSS&gt;#</code></pre>
+  <p>Sirve para dos cosas: mantener viva la conexión y reportar el <strong>nivel de batería</strong>
+    del equipo. Si baja del 20 % se genera una alerta.</p>
+
+  <h4 style="margin:1.2rem 0 .5rem;font-size:.95rem">2. Posición (V1)</h4>
+  <pre class="plain"><code>*HQ,&lt;id&gt;,V1,&lt;hora&gt;,&lt;A|V&gt;,&lt;lat&gt;,&lt;N|S&gt;,&lt;lon&gt;,&lt;E|W&gt;,&lt;vel&gt;,&lt;rumbo&gt;,&lt;fecha&gt;,&lt;estado&gt;#</code></pre>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Campo</th><th>Ejemplo</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">id</td><td class="mono">9170004321</td><td>ID del equipo. Es lo que enlaza la trama con la ficha del vehículo.</td></tr>
+        <tr><td class="mono">hora</td><td class="mono">034256</td><td>03:42:56 en <strong>UTC</strong> (no hora local).</td></tr>
+        <tr><td class="mono">A | V</td><td class="mono">A</td><td><strong>A</strong> = ubicación válida. <strong>V</strong> = sin señal GPS confiable (se guarda igual, marcada como inválida).</td></tr>
+        <tr><td class="mono">lat</td><td class="mono">1024.1200,N</td><td>Grados y minutos → <strong>10.402000</strong>. La «S» la haría negativa.</td></tr>
+        <tr><td class="mono">lon</td><td class="mono">07530.7400,W</td><td>→ <strong>−75.512333</strong>. La «W» la hace negativa.</td></tr>
+        <tr><td class="mono">vel</td><td class="mono">23.5</td><td>En <strong>nudos</strong>. El sistema los pasa a km/h: 23.5 × 1.852 = <strong>43.5 km/h</strong>.</td></tr>
+        <tr><td class="mono">rumbo</td><td class="mono">187</td><td>Grados: 0 = norte, 90 = este, 180 = sur, 270 = oeste.</td></tr>
+        <tr><td class="mono">fecha</td><td class="mono">250726</td><td>25 de julio de 2026 (día, mes, año).</td></tr>
+        <tr><td class="mono">estado</td><td class="mono">FFFFFBFF</td><td>8 dígitos hexadecimales con el estado del motor y las alarmas.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>El campo de estado</h3>
+  <p>Son 32 bits donde <strong>un 0 significa evento activo</strong> (lógica invertida, así funciona
+    el protocolo H02):</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Bit</th><th>Qué indica</th><th>En el ejemplo FFFFFBFF</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0</td><td>Vibración</td><td>1 → sin alarma</td></tr>
+        <tr><td class="mono">1</td><td>Botón SOS</td><td>1 → sin alarma</td></tr>
+        <tr><td class="mono">2</td><td>Exceso de velocidad (del equipo)</td><td>1 → sin alarma</td></tr>
+        <tr><td class="mono">10</td><td>Ignición / ACC</td><td><strong>0 → motor encendido</strong></td></tr>
+        <tr><td class="mono">19</td><td>Corte de energía</td><td>1 → sin alarma</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>En el ejemplo, <code>FFFFFBFF</code> significa <strong>motor encendido y sin alarmas</strong>.
+    El valor crudo siempre se guarda en la base (<code>status_raw</code>), así que si algún equipo
+    usa otra convención se puede reinterpretar sin perder información.</p>
+  <div class="note warn">
+    <b>Pendiente de validar con equipo físico</b>
+    El bit de ignición se interpreta según la convención estándar de H02. Cuando instales el primer
+    ST‑901 real, enciende y apaga el vehículo y compara: si el estado del motor sale invertido, se
+    ajusta una línea del parser. Por eso guardamos siempre el valor crudo.
+  </div>
+
+  <h2>Qué hace el servidor con cada posición</h2>
+  <p>En orden, y diseñado para que <strong>el mapa en vivo nunca se caiga</strong> aunque falle la
+    base de datos:</p>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><div class="num">1</div><div class="step-title">Identifica el equipo</div></div>
+      <p>Busca el <code>unique_id</code> en la tabla de dispositivos. Si no existe, lo
+        <strong>crea automáticamente</strong> como «ST-901 &lt;id&gt;» — por eso un equipo sin
+        registrar igual aparece en el mapa, solo que sin placa ni conductor.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">2</div><div class="step-title">Guarda el histórico</div></div>
+      <p>Inserta la posición en la base con su geometría espacial (PostGIS) y la trama original
+        completa, para auditoría.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">3</div><div class="step-title">Emite en vivo</div></div>
+      <p>Publica el evento <code>position</code> por WebSocket. Es lo que hace que el vehículo se
+        mueva en el mapa al instante. <strong>Este paso no espera a la base de datos.</strong></p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">4</div><div class="step-title">Evalúa alertas</div></div>
+      <p>Compara con el estado anterior del vehículo: ¿cruzó el límite de velocidad?, ¿arrancó o se
+        detuvo?, ¿entró o salió de una geocerca?, ¿hay alarma de SOS? Solo genera alerta cuando algo
+        <em>cambia</em>.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">5</div><div class="step-title">Guarda la última posición en Redis</div></div>
+      <p>Para consultas inmediatas sin tocar la base de datos.</p>
+    </li>
+  </ol>
+
+  <h3>Cómo queda guardada la posición</h3>
+  <p>La misma trama del ejemplo, ya procesada (<code>GET /devices/3259/positions</code>):</p>
+  <pre><code>{
+  <span class="k">"time"</span>: <span class="s">"2026-07-25T03:42:56.000Z"</span>,
+  <span class="k">"latitude"</span>: <span class="s">10.402</span>,
+  <span class="k">"longitude"</span>: <span class="s">-75.512333</span>,
+  <span class="k">"speed_kmh"</span>: <span class="s">43.5</span>,
+  <span class="k">"course"</span>: <span class="s">187</span>,
+  <span class="k">"valid"</span>: <span class="s">true</span>,
+  <span class="k">"ignition"</span>: <span class="s">true</span>,
+  <span class="k">"alarms"</span>: []
+}</code></pre>
+
+  <h3>Las alertas que generó</h3>
+  <p>La segunda trama iba a 60 nudos = 111 km/h, con límite de 70. Resultado real:</p>
+  <pre><code>[
+  {
+    <span class="k">"type"</span>: <span class="s">"exceso_velocidad"</span>,
+    <span class="k">"severity"</span>: <span class="s">"warning"</span>,
+    <span class="k">"message"</span>: <span class="s">"DOC001 (Pedro Ruiz): exceso de velocidad 111 km/h (límite 70)"</span>
+  },
+  {
+    <span class="k">"type"</span>: <span class="s">"inicio_movimiento"</span>,
+    <span class="k">"severity"</span>: <span class="s">"info"</span>,
+    <span class="k">"message"</span>: <span class="s">"DOC001 (Pedro Ruiz): comenzó a moverse"</span>
+  }
+]</code></pre>
+  <p>Ahí se ve para qué sirven los campos del registro: la <strong>placa</strong> y el
+    <strong>conductor</strong> arman el mensaje, y el <strong>límite de velocidad</strong> es el que
+    dispara la alerta.</p>
+
+  <h3>Y el equipo queda así en la flota</h3>
+  <pre><code>{
+  <span class="k">"unique_id"</span>: <span class="s">"9170004321"</span>,
+  <span class="k">"plate"</span>: <span class="s">"DOC001"</span>,
+  <span class="k">"battery_level"</span>: <span class="s">87</span>,        <span class="c">// llegó por el heartbeat</span>
+  <span class="k">"last_seen"</span>: <span class="s">"2026-07-25T03:42:10.580Z"</span>,
+  <span class="k">"position_time"</span>: <span class="s">"2026-07-25T03:43:57.000Z"</span>,
+  <span class="k">"latitude"</span>: <span class="s">10.405</span>,
+  <span class="k">"longitude"</span>: <span class="s">-75.515</span>,
+  <span class="k">"speed_kmh"</span>: <span class="s">111.1</span>,
+  <span class="k">"course"</span>: <span class="s">190</span>,
+  <span class="k">"ignition"</span>: <span class="s">true</span>
+}</code></pre>
+
+  <h2>Qué se ve en el registro del servidor</h2>
+  <p>Con el sistema corriendo, estas son las líneas típicas del log:</p>
+  <pre class="plain"><code>[TcpServerService] GPS conectado: 190.85.x.x:54123
+[TcpServerService] RAW 190.85.x.x → *HQ,9170004321,V1,034256,A,...#
+[PositionsService] Posición 9170004321 → 10.40200, -75.51233 @ 43.5 km/h
+[TcpServerService] Heartbeat 9170004321 — batería 87%
+[EventsService]    [WARNING] DOC001 (Pedro Ruiz): exceso de velocidad 111 km/h (límite 70)
+[TcpServerService] GPS desconectado: 190.85.x.x:54123</code></pre>
+  <p>La línea <code>RAW</code> guarda la trama tal cual llegó y es la evidencia para depurar
+    cualquier discrepancia con el equipo real. Para verlo en el servidor:</p>
+  <pre class="plain"><code>docker logs -f dismap-app</code></pre>
+
+  <h2>Referencia de la API</h2>
+  <p>Todas las rutas (menos el login) exigen la cabecera
+    <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+  <h3>Sesión</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ruta</th><th>Qué hace</th><th>Quién</th></tr></thead>
+      <tbody>
+        <tr><td class="mono"><span class="tag post">POST</span> /auth/login</td><td>Entrega el token de sesión (dura 12 h)</td><td>Público</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /auth/me</td><td>Datos del usuario del token</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag post">POST</span> /auth/change-password</td><td>Cambia la contraseña propia</td><td>Todos</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Flota</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ruta</th><th>Qué hace</th><th>Quién</th></tr></thead>
+      <tbody>
+        <tr><td class="mono"><span class="tag get">GET</span> /devices</td><td>Flota completa con la última posición de cada uno</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag post">POST</span> /devices</td><td>Registra un equipo con su configuración</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag patch">PATCH</span> /devices/:id</td><td>Edita la ficha del vehículo</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag del">DELETE</span> /devices/:id</td><td>Elimina el vehículo y su historial</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /devices/config</td><td>Host y puerto para armar los SMS de configuración</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /devices/:id/positions</td><td>Historial (24 h por defecto; acepta <code>from</code>, <code>to</code>, <code>limit</code>)</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /devices/:id/report</td><td>Resumen: distancia, viajes, velocidades, histograma por hora</td><td>Todos</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Geocercas, alertas y usuarios</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ruta</th><th>Qué hace</th><th>Quién</th></tr></thead>
+      <tbody>
+        <tr><td class="mono"><span class="tag get">GET</span> /geofences</td><td>Lista las zonas</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag post">POST</span> /geofences</td><td>Crea una zona (círculo o polígono)</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag patch">PATCH</span> /geofences/:id</td><td>Renombra, cambia color o activa/desactiva</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag del">DELETE</span> /geofences/:id</td><td>Elimina la zona</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /events</td><td>Historial de alertas (filtros: <code>deviceId</code>, <code>severity</code>, <code>unack</code>)</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag patch">PATCH</span> /events/:id/ack</td><td>Marca una alerta como vista</td><td>Todos</td></tr>
+        <tr><td class="mono"><span class="tag get">GET</span> /users</td><td>Lista de usuarios</td><td>Admin</td></tr>
+        <tr><td class="mono"><span class="tag post">POST</span> /users</td><td>Crea usuario (admin solo puede crear operadores)</td><td>Admin</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Tiempo real (WebSocket)</h3>
+  <p>Socket.IO en el mismo puerto del panel. Requiere el token en el handshake:</p>
+  <pre><code>const socket = io({ auth: { token: <span class="s">'&lt;token&gt;'</span> } });
+socket.on(<span class="s">'position'</span>, (p) =&gt; { <span class="c">/* el vehículo se movió */</span> });
+socket.on(<span class="s">'event'</span>,    (e) =&gt; { <span class="c">/* llegó una alerta */</span> });</code></pre>
+
+  <h2>Base de datos</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tabla</th><th>Qué guarda</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">devices</td><td>Ficha de cada equipo/vehículo: ID, placa, conductor, SIM, APN, límite de velocidad.</td></tr>
+        <tr><td class="mono">positions</td><td>Cada posición recibida, con geometría espacial y la trama original. Optimizada para series de tiempo (TimescaleDB).</td></tr>
+        <tr><td class="mono">events</td><td>Historial de alertas generadas.</td></tr>
+        <tr><td class="mono">geofences</td><td>Zonas vigiladas (círculos y polígonos, con PostGIS).</td></tr>
+        <tr><td class="mono">users</td><td>Usuarios del sistema. Las contraseñas se guardan cifradas (bcrypt), nunca en texto plano.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Respaldo de la base:</p>
+  <pre class="plain"><code>docker exec dismap-db pg_dump -U postgres dismap &gt; respaldo_$(date +%F).sql</code></pre>
+
+  <h2>Añadir otros modelos de GPS</h2>
+  <p>Hoy el sistema entiende <strong>solo el protocolo H02</strong> (SinoTrack ST‑901 y equipos
+    compatibles). Está construido con un patrón que permite sumar otros sin tocar el resto: para
+    soportar un GT06, Teltonika o Queclink se crea un archivo nuevo en
+    <code>src/protocol-gateway/adapters/</code> que sepa reconocer e interpretar sus tramas, y se
+    registra en el servidor TCP. El resto del sistema —histórico, alertas, mapa, reportes— funciona
+    igual sin modificaciones.</p>
+
+  <div class="foot">
+    DISMAP GPS · Documentación técnica. Los ejemplos de tramas, respuestas y alertas son capturas
+    reales del sistema en funcionamiento, no ejemplos ilustrativos.
+  </div>
+</div>
+</body>
+</html>

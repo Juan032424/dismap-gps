@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Instalar un GPS · DISMAP GPS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%231E7FEF'/%3E%3Cpath d='M20 8c-4.4 0-8 3.4-8 7.6 0 5.4 8 12.4 8 12.4s8-7 8-12.4C28 11.4 24.4 8 20 8z' fill='white'/%3E%3Ccircle cx='20' cy='15.5' r='3.2' fill='%2316B364'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <svg width="38" height="38" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <path d="M27.5 9.5a6.4 6.4 0 0 1 5.4 5.4" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M27 4.6a11 11 0 0 1 9 9" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round" opacity="0.45"/>
+      <path d="M16 3.5C9.9 3.5 5 8.2 5 14.3c0 7.9 11 21 11 21s11-13.1 11-21C27 8.2 22.1 3.5 16 3.5Z" fill="#1E7FEF"/>
+      <circle cx="16" cy="14.2" r="4.6" fill="#16B364"/>
+    </svg>
+    <div class="brand">DIS<span>MAP</span><small>Tu flota segura y bajo control</small></div>
+    <a class="back" href="index.html">← Documentación</a>
+  </div>
+
+  <div class="printbar"><button type="button" onclick="window.print()">Guardar como PDF</button></div>
+
+  <h1>Cómo poner un GPS a reportar</h1>
+  <p class="lede">Manual de campo para instalar un SinoTrack ST‑901 en un vehículo y conectarlo a
+    DISMAP. Se hace por mensajes de texto, desde cualquier celular, en unos 5 minutos.</p>
+
+  <div class="card">
+    <div class="eyebrow">Datos de tu servidor</div>
+    <div class="grid">
+      <div class="field"><div class="k">Dirección</div><div class="v" id="srv-host">…</div></div>
+      <div class="field"><div class="k">Puerto GPS</div><div class="v" id="srv-port">5013</div></div>
+      <div class="field"><div class="k">Panel web</div><div class="v" id="srv-panel">…</div></div>
+    </div>
+  </div>
+
+  <h2>Antes de empezar</h2>
+  <p>Ten esto a la mano. Si falta algo, el equipo no va a reportar aunque mandes todos los mensajes.</p>
+  <ul class="check">
+    <li><strong>El ID del GPS.</strong> Son unos 10 dígitos impresos en una etiqueta pegada al
+      equipo (a veces dice <em>ID</em> o <em>IMEI</em>). Sin ese número el sistema no puede
+      reconocerlo.</li>
+    <li><strong>Una SIM activa con datos y SMS</strong>, ya insertada en el equipo. Pruébala antes
+      en un celular: si no navega ahí, tampoco va a navegar en el GPS.</li>
+    <li><strong>El número de esa SIM.</strong> Es a donde vas a enviar los mensajes.</li>
+    <li><strong>El APN del operador.</strong> Confírmalo con quien te vendió la línea. Es el dato
+      que más falla y no se puede adivinar.</li>
+    <li><strong>El equipo conectado y encendido</strong>, con vista al cielo para que agarre señal.</li>
+    <li><strong>Cualquier celular</strong> para enviar los mensajes.</li>
+  </ul>
+
+  <h2>Paso previo: registra el equipo en el panel</h2>
+  <p>Opcional, pero te ahorra trabajo. Entra al panel, abre <strong>Administración (⚙)</strong> y
+    registra el equipo con su ID, la placa, el conductor y el límite de velocidad. Así, cuando
+    reporte por primera vez, ya aparece identificado en el mapa.</p>
+  <div class="note info">
+    <b>Atajo</b>
+    En la lista de dispositivos, cada equipo tiene un botón <strong>📱 SMS</strong> que arma estos
+    mismos mensajes con los datos ya puestos. Este manual sirve igual si prefieres escribirlos.
+  </div>
+
+  <h2>Los mensajes, en orden</h2>
+  <p>Envía cada mensaje <strong>al número de la SIM que está dentro del GPS</strong>, como un SMS
+    normal, uno por uno. Espera la respuesta antes de mandar el siguiente. El orden importa: sin
+    internet configurado, el equipo no puede llegar al servidor.</p>
+
+  <div class="card">
+    <div class="eyebrow">Ajusta los comandos a tu caso</div>
+    <div style="display:flex;flex-wrap:wrap;gap:1rem">
+      <label style="display:flex;flex-direction:column;gap:.3rem;flex:1 1 12rem">
+        <span class="eyebrow" style="margin:0">Clave del equipo</span>
+        <input id="pw" value="0000" maxlength="12" spellcheck="false" autocomplete="off"
+               style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;padding:.55rem .7rem;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--text)">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:.3rem;flex:1 1 12rem">
+        <span class="eyebrow" style="margin:0">APN del operador</span>
+        <input id="apn" value="internet.operador" spellcheck="false" autocomplete="off"
+               style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;padding:.55rem .7rem;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--text)">
+      </label>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><div class="num">1</div><div class="step-title">Darle internet al equipo</div></div>
+      <button class="cmd-btn" type="button" data-tpl="803{pw} {apn}">
+        <span class="copy">Copiar</span><span class="cmd">8030000 internet.operador</span>
+      </button>
+      <p>Le dice al GPS por dónde salir a internet. Escribe arriba el APN de tu operador y el
+        comando se actualiza solo.</p>
+      <p>Si tu operador exige usuario y contraseña, el comando lleva dos datos más al final:
+        <code>803clave apn usuario contraseña</code>.</p>
+      <div class="reply">Responde algo como: APN OK</div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><div class="num">2</div><div class="step-title">Apuntarlo a tu servidor</div></div>
+      <button class="cmd-btn" type="button" data-tpl="804{pw} {host} {port}">
+        <span class="copy">Copiar</span><span class="cmd">…</span>
+      </button>
+      <p>Este es el paso clave: le indica a dónde enviar cada posición. La dirección y el puerto
+        ya son los de tu servidor, no los cambies.</p>
+      <div class="reply">Responde algo como: SERVER OK</div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><div class="num">3</div><div class="step-title">Cada cuánto reporta andando</div></div>
+      <button class="cmd-btn" type="button" data-tpl="805{pw} 20">
+        <span class="copy">Copiar</span><span class="cmd">8050000 20</span>
+      </button>
+      <p>Con el motor encendido, manda su posición cada 20 segundos. Puedes cambiar el número:
+        menos segundos es un rastreo más fino, pero gasta más datos.</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><div class="num">4</div><div class="step-title">Cada cuánto reporta detenido</div></div>
+      <button class="cmd-btn" type="button" data-tpl="809{pw} 300">
+        <span class="copy">Copiar</span><span class="cmd">8090000 300</span>
+      </button>
+      <p>Con el motor apagado, cada 300 segundos (5 minutos). Ahorra datos y batería mientras el
+        vehículo está parqueado, pero sigues sabiendo dónde quedó.</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><div class="num">5</div><div class="step-title">Confirmar que todo quedó bien</div></div>
+      <button class="cmd-btn" type="button" data-tpl="RCONF">
+        <span class="copy">Copiar</span><span class="cmd">RCONF</span>
+      </button>
+      <p>El equipo responde con su configuración actual. Revisa que aparezcan tu APN y la dirección
+        de tu servidor con el puerto. Si algo salió distinto, repite ese paso.</p>
+      <div class="reply">Responde con: APN, IP:puerto e intervalos configurados</div>
+    </li>
+  </ol>
+
+  <div class="note warn">
+    <b>Sobre la clave 0000</b>
+    Es la clave de fábrica de SinoTrack y funciona en la mayoría de equipos nuevos. Si el equipo no
+    responde a ningún mensaje, revisa el manual que vino en la caja: puede traer otra clave.
+    Cámbiala arriba y los comandos se ajustan.
+  </div>
+
+  <h2>Comprobar que funcionó</h2>
+  <p>Entra al panel con tu usuario. En uno o dos minutos el vehículo debe aparecer en el mapa.
+    Sabrás que está bien cuando veas:</p>
+  <ul class="check">
+    <li>El vehículo <strong>en la lista de flota</strong>, con hora de reporte reciente («hace 20s»).</li>
+    <li>El punto <strong>en verde</strong> cuando el vehículo se mueve.</li>
+    <li>En su ficha: velocidad, rumbo, estado del motor y batería.</li>
+  </ul>
+  <p>Para una prueba en movimiento, dale una vuelta a la manzana y mira cómo se dibuja el recorrido.</p>
+
+  <h2>Si algo no funciona</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Qué pasa</th><th>Causa más probable</th><th>Qué hacer</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>No responde ningún SMS</td>
+          <td>Clave distinta a <code>0000</code>, SIM sin saldo o SMS bloqueados, o equipo apagado</td>
+          <td>Revisa la clave en el manual del equipo. Prueba la SIM en un celular.</td>
+        </tr>
+        <tr>
+          <td>Responde los SMS pero no aparece en el mapa</td>
+          <td>APN incorrecto: tiene señal de celular pero no sale a internet</td>
+          <td>Confirma el APN exacto con el operador, repite el paso 1 y verifica con <code>RCONF</code>.</td>
+        </tr>
+        <tr>
+          <td>Aparece pero sin ubicación o marcado «sin fix»</td>
+          <td>No ha enganchado los satélites</td>
+          <td>Saca el vehículo a cielo abierto y espera 2–5 minutos. La primera vez tarda más.</td>
+        </tr>
+        <tr>
+          <td>Aparece como equipo desconocido</td>
+          <td>El ID registrado no coincide con el del equipo</td>
+          <td>Compara el ID de la etiqueta con el registrado y corrígelo en Administración.</td>
+        </tr>
+        <tr>
+          <td>Reportaba y dejó de hacerlo</td>
+          <td>Se acabaron los datos del plan, o quedó sin energía</td>
+          <td>Revisa saldo de datos de la SIM y la conexión eléctrica en el vehículo.</td>
+        </tr>
+        <tr>
+          <td>El motor aparece encendido cuando está apagado</td>
+          <td>El cable de ignición (ACC) no quedó bien conectado</td>
+          <td>Verifica que ese cable esté a un positivo que solo dé corriente con la llave puesta.</td>
+        </tr>
+        <tr>
+          <td>Reporta, pero no sale en recorridos ni reportes</td>
+          <td>El reloj del equipo está adelantado respecto al servidor</td>
+          <td>Revisa la zona horaria del equipo; debe trabajar en UTC. Es poco común.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note info">
+    <b>Para el instalador</b>
+    Conecta el equipo a corriente permanente (batería) y el cable de ignición a un positivo que solo
+    tenga corriente con la llave en contacto. De ahí sale el dato de motor encendido/apagado, que
+    alimenta los reportes de horas de uso y las alertas.
+  </div>
+
+  <div class="foot">
+    DISMAP GPS · Instalación de equipos ST‑901 (protocolo H02). Los comandos corresponden al manual
+    de SinoTrack; si tu equipo trae otra clave o comandos distintos, avísale al administrador.
+  </div>
+</div>
+
+<script>
+  (function () {
+    var host = location.hostname, port = '5013';
+    var pw = document.getElementById('pw'), apn = document.getElementById('apn');
+    var btns = [].slice.call(document.querySelectorAll('.cmd-btn'));
+
+    document.getElementById('srv-host').textContent = host;
+    document.getElementById('srv-panel').textContent = host;
+
+    function render() {
+      btns.forEach(function (b) {
+        b.querySelector('.cmd').textContent = b.dataset.tpl
+          .replace('{pw}', pw.value.trim() || '0000')
+          .replace('{apn}', apn.value.trim() || 'internet.operador')
+          .replace('{host}', host)
+          .replace('{port}', port);
+      });
+    }
+
+    // Puerto real del servidor (si la sesión está activa); si no, queda 5013.
+    var t = localStorage.getItem('dismap_token');
+    if (t) {
+      fetch('/devices/config', { headers: { Authorization: 'Bearer ' + t } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (c) {
+          if (!c) return;
+          if (c.gpsPort) { port = String(c.gpsPort); document.getElementById('srv-port').textContent = port; }
+          if (c.gpsHost) { host = c.gpsHost; document.getElementById('srv-host').textContent = host; }
+          if (c.smsPassword) { pw.value = c.smsPassword; }
+          render();
+        })
+        .catch(function () {});
+    }
+
+    pw.addEventListener('input', render);
+    apn.addEventListener('input', render);
+    render();
+
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var text = b.querySelector('.cmd').textContent, label = b.querySelector('.copy');
+        function done() {
+          label.textContent = 'Copiado'; b.classList.add('copied');
+          setTimeout(function () { label.textContent = 'Copiar'; b.classList.remove('copied'); }, 1600);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta); done();
+        }
+      });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+/* ============================================================================
+   DISMAP GPS · Route Viz — Historial premium (Canvas + SVG)
+   ----------------------------------------------------------------------------
+   Capa visual del RECORRIDO y del REPRODUCTOR. Se carga después de ui-v2.css.
+   Solo presentación de lo que dibuja route-viz.js. No toca el login (.lg-*)
+   ni los marcadores de la flota en vivo. Rollback = quitar este <link> y
+   route-viz.js del index.html.
+   ========================================================================= */
+
+body.ui-v2 {
+  --rv-blue: #2E7DF6;      /* núcleo de la ruta */
+  --rv-blue-lo: #3E5F86;   /* ruta pendiente (apagada) */
+  --rv-green: #16B364;     /* inicio / movimiento */
+  --rv-red: #F0455B;       /* fin */
+  --rv-casing: #F7F9FB;    /* borde blanco (casing) */
+  --rv-ink: #0B1626;
+}
+
+/* ---------- Lienzo de la ruta (por encima de tiles, bajo marcadores) ------ */
+/* El lienzo vive DENTRO del overlayPane de Leaflet (ver route-viz.js): por eso
+   queda sobre los tiles y bajo los marcadores. Como hijo del contenedor
+   quedaba detrás de .leaflet-map-pane (z-index 400) y no se veía nada. */
+.rv-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;        /* el mapa sigue arrastrable */
+  will-change: transform;
+}
+
+/* ---------- Vehículo de reproducción (SVG cenital) ------------------------ */
+.rv-veh {
+  background: none !important;
+  border: none !important;
+}
+.rv-veh-inner {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  /* La rotación/escala las fija el JS por frame; sin transición aquí para no
+     pelear con la interpolación. La suavidad la produce el propio bucle. */
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .45));
+}
+.rv-veh-halo {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 125, 246, .30), transparent 68%);
+  animation: rv-halo 2.4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes rv-halo {
+  0%, 100% { transform: scale(.82); opacity: .55; }
+  50%      { transform: scale(1.12); opacity: .95; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-veh-halo { animation: none; }
+}
+
+/* ---------- Marcadores de inicio / fin ------------------------------------ */
+.rv-endpt { background: none !important; border: none !important; }
+.rv-endpt-dot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+.rv-endpt-dot svg { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5)); }
+.rv-endpt-pulse {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  animation: rv-pulse 2.2s ease-out infinite;
+}
+.rv-endpt.is-start .rv-endpt-pulse { box-shadow: 0 0 0 0 rgba(22, 179, 100, .5); }
+.rv-endpt.is-end   .rv-endpt-pulse { box-shadow: 0 0 0 0 rgba(240, 69, 91, .5); }
+@keyframes rv-pulse {
+  70%  { box-shadow: 0 0 0 16px rgba(0, 0, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-endpt-pulse { animation: none; }
+}
+
+/* ---------- Paradas inteligentes (círculos según tiempo detenido) --------- */
+.rv-stop { background: none !important; border: none !important; }
+.rv-stop-bubble {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #F7F9FB;
+  line-height: 1;
+  background: radial-gradient(circle at 50% 38%, rgba(245, 165, 36, .34), rgba(245, 165, 36, .14));
+  border: 1.5px solid rgba(245, 165, 36, .85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .4), inset 0 0 12px rgba(245, 165, 36, .18);
+  backdrop-filter: blur(1.5px);
+  transition: transform .16s cubic-bezier(.2, .7, .2, 1), box-shadow .16s;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.rv-stop-bubble:hover {
+  transform: scale(1.09);
+  box-shadow: 0 4px 16px rgba(245, 165, 36, .4), inset 0 0 12px rgba(245, 165, 36, .28);
+}
+.rv-stop-bubble small {
+  display: block;
+  font-size: .72em;
+  font-weight: 500;
+  opacity: .82;
+  margin-top: 1px;
+}
+
+/* Entrada suave de marcadores (microanimación de aparición) */
+.rv-appear {
+  animation: rv-appear .34s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes rv-appear {
+  from { opacity: 0; transform: scale(.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-appear { animation: none; }
+}
+
+/* ---------- Tarjeta flotante (reemplaza el popup de Leaflet) -------------- */
+.rv-card {
+  position: absolute;
+  z-index: 690;
+  transform: translate(-50%, calc(-100% - 16px));
+  min-width: 190px;
+  max-width: 260px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(24, 41, 62, .98), rgba(18, 31, 48, .98));
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .5);
+  color: var(--text);
+  font-family: var(--font-body);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: rv-card-in .18s cubic-bezier(.2, .8, .2, 1);
+}
+.rv-card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(18, 31, 48, .98);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+@keyframes rv-card-in {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 6px)); }
+  to   { opacity: 1; transform: translate(-50%, calc(-100% - 16px)); }
+}
+.rv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-bottom: 8px;
+}
+.rv-card-ico {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.rv-card-ico.is-start { background: rgba(22, 179, 100, .18); color: var(--rv-green); }
+.rv-card-ico.is-end   { background: rgba(240, 69, 91, .18);  color: var(--rv-red); }
+.rv-card-ico.is-stop  { background: rgba(245, 165, 36, .18); color: var(--warn); }
+.rv-card-rows { display: grid; gap: 5px; }
+.rv-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 12px;
+}
+.rv-card-row .k { color: var(--muted); }
+.rv-card-row .v { font-family: var(--font-mono); color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ---------- Reproductor: HUD de progreso premium ------------------------- */
+body.ui-v2 #app #player.rv-player {
+  width: min(680px, calc(100% - 400px));
+  padding: 13px 16px 14px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(24, 41, 62, .96), rgba(16, 26, 43, .97));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(10px);
+}
+.rv-player .pl-top { margin-bottom: 11px; }
+.rv-hud {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.rv-hud-gauge {
+  --v: 0;
+  position: relative;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--panel) 74%, transparent 75% 100%),
+    conic-gradient(var(--rv-blue) calc(var(--v) * 1%), rgba(62, 95, 134, .35) 0);
+  display: grid;
+  place-items: center;
+}
+.rv-hud-gauge b {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+}
+.rv-hud-gauge span { font-size: 8.5px; color: var(--muted); letter-spacing: .5px; }
+.rv-hud-facts { display: grid; grid-template-columns: repeat(3, auto); gap: 4px 20px; }
+.rv-hud-fact .k {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+}
+.rv-hud-fact .v {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.rv-hud-fact .v small { font-size: 10px; color: var(--muted); font-weight: 500; }
+
+/* Barra de progreso con relleno de avance */
+.rv-player .pl-controls { gap: 12px; }
+.rv-progress {
+  position: relative;
+  flex: 1;
+  height: 6px;
+}
+/* El selector lleva body.ui-v2 #app para ganarle a la regla de ui-v2.css
+   (body.ui-v2 #app #pl-range), que pinta un fondo opaco y taparía la pista
+   y el relleno de avance que hay debajo. */
+body.ui-v2 #app .rv-progress input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  height: 6px;
+  background: transparent;
+  z-index: 2;
+}
+.rv-progress-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(62, 95, 134, .35);
+  overflow: hidden;
+}
+.rv-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--rv-green), var(--rv-blue));
+}
+
+/* ============================ Móvil ============================ */
+@media (max-width: 900px) {
+  body.ui-v2 #app #player.rv-player { width: calc(100% - 20px); }
+  .rv-hud-facts { grid-template-columns: repeat(3, auto); gap: 2px 12px; }
+  .rv-hud-fact .v { font-size: 13px; }
+}
+@media (max-width: 560px) {
+  .rv-hud-gauge { width: 48px; height: 48px; }
+  .rv-hud-fact .k { font-size: 8.5px; }
+}

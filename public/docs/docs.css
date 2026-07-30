@@ -1,0 +1,184 @@
+/* DISMAP GPS — hoja de estilo compartida de la documentación.
+   Identidad de marca: Ink #0E1A2B · Azul #1E7FEF · Live #16B364 · Papel #F7F9FB */
+
+:root {
+  --azul: #1E7FEF;
+  --live: #16B364;
+  --ambar: #F5A524;
+  --rojo: #E5484D;
+
+  --bg: #F7F9FB;
+  --surface: #FFFFFF;
+  --surface-2: #EDF1F6;
+  --text: #0E1A2B;
+  --text-soft: #5A6B82;
+  --line: #D5DEE9;
+  --code-bg: #0E1A2B;
+  --code-text: #3DD68C;
+  --shadow: 0 1px 2px rgba(14,26,43,.06), 0 8px 24px rgba(14,26,43,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0B1622; --surface: #142234; --surface-2: #1B2C43;
+    --text: #F7F9FB; --text-soft: #8FA2BC; --line: #26384F;
+    --code-bg: #060D16; --code-text: #3DD68C;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1622; --surface: #142234; --surface-2: #1B2C43;
+  --text: #F7F9FB; --text-soft: #8FA2BC; --line: #26384F;
+  --code-bg: #060D16; --code-text: #3DD68C;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+}
+:root[data-theme="light"] {
+  --bg: #F7F9FB; --surface: #FFFFFF; --surface-2: #EDF1F6;
+  --text: #0E1A2B; --text-soft: #5A6B82; --line: #D5DEE9;
+  --code-bg: #0E1A2B; --code-text: #3DD68C;
+  --shadow: 0 1px 2px rgba(14,26,43,.06), 0 8px 24px rgba(14,26,43,.06);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  font-size: 16px; line-height: 1.62; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 50rem; margin: 0 auto; padding: 2.25rem 1.25rem 5rem; }
+
+/* Encabezado de marca */
+.head { display: flex; align-items: center; gap: .9rem; margin-bottom: 2rem; }
+.head svg { flex: none; }
+.brand { font-weight: 700; font-size: 1.3rem; letter-spacing: -.01em; line-height: 1; }
+.brand span { color: var(--azul); }
+.brand small {
+  display: block; font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: .57rem; font-weight: 500; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-soft); margin-top: .35rem;
+}
+.back {
+  margin-left: auto; font-size: .85rem; color: var(--azul); text-decoration: none;
+  border: 1px solid var(--line); border-radius: 8px; padding: .4rem .75rem; white-space: nowrap;
+}
+.back:hover { border-color: var(--azul); }
+
+h1 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 .6rem; text-wrap: balance; }
+.lede { font-size: 1.04rem; color: var(--text-soft); margin: 0 0 2.5rem; text-wrap: pretty; }
+h2 { font-size: 1.22rem; letter-spacing: -.01em; margin: 2.75rem 0 1rem; padding-top: 1.4rem; border-top: 1px solid var(--line); text-wrap: balance; }
+h2:first-of-type { border-top: 0; padding-top: 0; }
+h3 { font-size: 1.02rem; margin: 1.75rem 0 .6rem; letter-spacing: -.005em; }
+p { margin: 0 0 1rem; }
+strong { font-weight: 650; }
+a { color: var(--azul); }
+
+.eyebrow {
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: .67rem; letter-spacing: .16em; text-transform: uppercase; color: var(--text-soft);
+  margin-bottom: .5rem;
+}
+
+/* Código y comandos */
+code {
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: .87em; background: var(--surface-2); padding: .12rem .35rem; border-radius: 5px;
+}
+pre {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: .95rem 1.1rem; overflow-x: auto; margin: 0 0 1.1rem;
+}
+pre code {
+  background: none; padding: 0; font-size: .84rem; line-height: 1.65;
+  color: var(--code-text); white-space: pre;
+}
+pre.plain code { color: #B9C7DA; }
+pre .c { color: #6B7E96; }   /* comentario */
+pre .k { color: #7FB2FF; }   /* clave */
+pre .s { color: #3DD68C; }   /* valor / string */
+
+/* Tarjetas */
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 1.15rem 1.25rem; box-shadow: var(--shadow); margin-bottom: 1.1rem;
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1rem; }
+.field .k { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .63rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-soft); }
+.field .v { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 1rem; font-weight: 600; margin-top: .2rem; font-variant-numeric: tabular-nums; word-break: break-all; }
+
+/* Índice del portal */
+.toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.toc a {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 1.2rem 1.25rem; box-shadow: var(--shadow); transition: border-color .15s, transform .15s;
+}
+.toc a:hover { border-color: var(--azul); transform: translateY(-2px); }
+.toc .t { font-weight: 650; font-size: 1.05rem; margin-bottom: .3rem; }
+.toc .d { font-size: .88rem; color: var(--text-soft); line-height: 1.5; }
+.toc .ico { font-size: 1.5rem; margin-bottom: .55rem; display: block; }
+
+/* Listas */
+ul.check { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .6rem; }
+ul.check li { display: flex; gap: .7rem; align-items: flex-start; }
+ul.check li::before { content: ""; flex: none; width: 1.05rem; height: 1.05rem; margin-top: .3rem; border-radius: 5px; border: 2px solid var(--azul); }
+ul.plain { padding-left: 1.15rem; margin: 0 0 1rem; }
+ul.plain li { margin-bottom: .45rem; }
+
+/* Pasos numerados */
+ol.steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.25rem 1.2rem; box-shadow: var(--shadow); }
+.step-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .8rem; }
+.num { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 700; font-size: .82rem; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.step-title { font-weight: 650; font-size: 1rem; }
+.step p { margin: 0 0 .5rem; font-size: .93rem; color: var(--text-soft); }
+.step p:last-child { margin-bottom: 0; }
+.step p strong { color: var(--text); }
+
+/* Comandos copiables */
+.cmd-btn { display: block; width: 100%; text-align: left; cursor: pointer; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: .8rem 1rem; margin-bottom: .7rem; position: relative; transition: border-color .15s; }
+.cmd-btn:hover { border-color: var(--azul); }
+.cmd-btn:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+.cmd-btn .cmd { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 1.02rem; font-weight: 600; color: var(--code-text); word-break: break-all; display: block; padding-right: 4.5rem; }
+.cmd-btn .copy { position: absolute; top: .58rem; right: .7rem; font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .57rem; letter-spacing: .1em; text-transform: uppercase; color: #8FA2BC; }
+.cmd-btn.copied .copy { color: var(--live); }
+.reply { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .79rem; background: var(--surface-2); border-left: 3px solid var(--live); padding: .5rem .7rem; border-radius: 0 7px 7px 0; color: var(--text); margin-top: .6rem; }
+
+/* Avisos */
+.note { border-radius: 12px; padding: .9rem 1.1rem; margin: 1.2rem 0; font-size: .93rem; border: 1px solid; line-height: 1.55; }
+.note b { display: block; margin-bottom: .2rem; }
+.note.warn { background: rgba(245,165,36,.12); border-color: rgba(245,165,36,.45); }
+.note.info { background: rgba(30,127,239,.1); border-color: rgba(30,127,239,.38); }
+.note.ok { background: rgba(22,179,100,.1); border-color: rgba(22,179,100,.4); }
+
+/* Tablas */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 1.2rem; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 32rem; }
+th, td { text-align: left; padding: .68rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .63rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-soft); background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td.mono, .mono { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .85em; }
+
+/* Etiquetas de rol / método HTTP */
+.tag { display: inline-block; font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: .64rem; letter-spacing: .06em; padding: .16rem .45rem; border-radius: 5px; border: 1px solid var(--line); color: var(--text-soft); }
+.tag.get { color: var(--live); border-color: rgba(22,179,100,.45); }
+.tag.post { color: var(--azul); border-color: rgba(30,127,239,.45); }
+.tag.patch { color: var(--ambar); border-color: rgba(245,165,36,.45); }
+.tag.del { color: var(--rojo); border-color: rgba(229,72,77,.45); }
+
+.foot { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-size: .82rem; color: var(--text-soft); }
+
+/* Barra de impresión */
+.printbar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: .6rem 0; margin-bottom: -.5rem; display: flex; justify-content: flex-end; }
+.printbar button { font-size: .82rem; padding: .45rem .8rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; font-family: inherit; }
+.printbar button:hover { border-color: var(--azul); }
+
+@media print {
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .wrap { max-width: none; padding: 0; }
+  .printbar, .back, .cmd-btn .copy, .tuner { display: none !important; }
+  .card, .step, .table-wrap, .toc a { box-shadow: none; break-inside: avoid; }
+  pre, .cmd-btn { background: #f4f6f8; border: 1px solid #ccc; }
+  pre code, .cmd-btn .cmd { color: #000; }
+  h2 { break-after: avoid; }
+  a { color: #000; text-decoration: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

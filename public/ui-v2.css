@@ -1,0 +1,660 @@
+/* ============================================================================
+   DISMAP GPS · UI v2 — Capa de modernización (Etapa 1)
+   ----------------------------------------------------------------------------
+   Se carga DESPUÉS de styles.css y actúa solo bajo body.ui-v2, sobre #app
+   (nunca sobre el login .lg-*). Reutiliza TODOS los IDs, clases y data-*
+   existentes; no cambia ningún contrato de JavaScript. Rollback = quitar la
+   clase ui-v2 del <body> o este <link>. Solo presentación.
+   Etapa 1: tokens, encabezado, flota, controles de mapa, estados, foco.
+   ========================================================================= */
+
+body.ui-v2 {
+  /* Escala de espaciado, radios, elevación y transiciones (aditivo) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --r-1: 8px;   --r-2: 10px;  --r-3: 14px;  --r-pill: 999px;
+  --e-1: 0 1px 2px rgba(0,0,0,.28);
+  --e-2: 0 6px 18px rgba(0,0,0,.34);
+  --e-3: 0 18px 44px rgba(0,0,0,.46);
+  --ring: 0 0 0 3px rgba(30,127,239,.28);
+  --t-fast: .14s ease;
+  --t-mid: .22s cubic-bezier(.2,.7,.2,1);
+  /* Neutros con leve sesgo azulado (más “producto”, no gris plano) */
+  --panel: #131F30;
+  --panel-2: #18293E;
+  --panel-3: #1E3350;
+  --line: #263A54;
+  --line-soft: #21344c;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --grad-head: linear-gradient(180deg, #17273b 0%, #121d2d 100%);
+}
+
+/* Tipografía: Inter para contenido, Space Grotesk para títulos (del login) */
+body.ui-v2 #app { font-family: var(--font-body); }
+body.ui-v2 #app .word,
+body.ui-v2 #app .dt-head .name,
+body.ui-v2 #app .al-head .title,
+body.ui-v2 #app .modal-head .title,
+body.ui-v2 #app .form-title,
+body.ui-v2 #app .list-title { font-family: var(--font-display); }
+
+/* Scrollbars finas y a tono */
+body.ui-v2 #app .scroll,
+body.ui-v2 #app .al-list,
+body.ui-v2 #app .dt-body,
+body.ui-v2 #app .modal-box { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+body.ui-v2 #app .scroll::-webkit-scrollbar,
+body.ui-v2 #app .al-list::-webkit-scrollbar,
+body.ui-v2 #app .dt-body::-webkit-scrollbar,
+body.ui-v2 #app .modal-box::-webkit-scrollbar { width: 9px; }
+body.ui-v2 #app .scroll::-webkit-scrollbar-thumb,
+body.ui-v2 #app .al-list::-webkit-scrollbar-thumb,
+body.ui-v2 #app .dt-body::-webkit-scrollbar-thumb,
+body.ui-v2 #app .modal-box::-webkit-scrollbar-thumb { background: var(--line); border-radius: var(--r-pill); border: 2px solid transparent; background-clip: padding-box; }
+body.ui-v2 #app .scroll:hover::-webkit-scrollbar-thumb { background: var(--panel-3); background-clip: padding-box; }
+
+/* Foco visible consistente en todo lo interactivo */
+body.ui-v2 #app button:focus-visible,
+body.ui-v2 #app a:focus-visible,
+body.ui-v2 #app input:focus-visible,
+body.ui-v2 #app select:focus-visible,
+body.ui-v2 #app .stat:focus-visible,
+body.ui-v2 #app .tab:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-1); }
+
+/* ---------- Encabezado ---------- */
+body.ui-v2 #app header {
+  background: var(--grad-head);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255,255,255,.02), var(--e-1);
+  padding: 10px 18px;
+}
+body.ui-v2 #app .logo { filter: drop-shadow(0 3px 8px rgba(30,127,239,.4)); }
+
+/* Indicador EN VIVO como píldora */
+body.ui-v2 #app .live {
+  background: rgba(22,179,100,.1);
+  border: 1px solid rgba(22,179,100,.32);
+  color: #57d996;
+  padding: 5px 11px 5px 9px;
+  border-radius: var(--r-pill);
+  font-size: 10.5px;
+}
+
+/* Contadores de flota como control segmentado con punto de color */
+body.ui-v2 #app .stats {
+  background: rgba(9,16,26,.5);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  padding: 3px;
+  gap: 2px;
+  margin-left: 14px;
+}
+body.ui-v2 #app .stats .stat {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid transparent; border-radius: 7px;
+  padding: 5px 12px; transition: background var(--t-fast), color var(--t-fast);
+}
+body.ui-v2 #app .stats .stat::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none;
+}
+body.ui-v2 #app .stats .stat[data-filter="mov"]::before { background: var(--live); box-shadow: 0 0 6px rgba(22,179,100,.6); }
+body.ui-v2 #app .stats .stat[data-filter="stop"]::before { background: #8497B0; }
+body.ui-v2 #app .stats .stat[data-filter="off"]::before { background: var(--danger); }
+body.ui-v2 #app .stats .stat[data-filter="all"]::before { background: var(--azul); }
+body.ui-v2 #app .stats .stat:hover { border-color: transparent; background: rgba(255,255,255,.04); color: var(--text); }
+body.ui-v2 #app .stats .stat.active { background: var(--panel-3); border-color: transparent; color: var(--text); box-shadow: var(--e-1); }
+
+/* Botones de icono del encabezado: tamaño táctil, coherentes */
+body.ui-v2 #app .header-right { gap: 6px; }
+body.ui-v2 #app .icon-btn {
+  width: 40px; height: 40px; border-radius: var(--r-1);
+  border: 1px solid var(--line-soft); background: rgba(255,255,255,.02);
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+}
+body.ui-v2 #app .icon-btn:hover { border-color: var(--azul); background: var(--azul-soft); transform: translateY(-1px); }
+body.ui-v2 #app .icon-btn:active { transform: translateY(0); }
+body.ui-v2 #app .badge { top: -6px; right: -6px; box-shadow: 0 0 0 2px var(--panel); }
+body.ui-v2 #app .user-chip {
+  padding: 5px 12px; background: rgba(255,255,255,.02);
+  border: 1px solid var(--line-soft); border-radius: var(--r-1); margin-left: 2px;
+}
+
+/* ---------- Botones base ---------- */
+body.ui-v2 #app button {
+  border-radius: var(--r-1);
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+body.ui-v2 #app button:hover { transform: translateY(-1px); }
+body.ui-v2 #app button:active { transform: translateY(0); }
+body.ui-v2 #app button.primary { box-shadow: 0 4px 14px rgba(30,127,239,.32); }
+body.ui-v2 #app button.primary:hover { box-shadow: 0 6px 20px rgba(30,127,239,.42); }
+
+/* ---------- Aside / pestañas ---------- */
+body.ui-v2 #app aside { background: var(--panel); box-shadow: var(--e-1); }
+body.ui-v2 #app .tabs .tab { transition: color var(--t-fast), border-color var(--t-fast); position: relative; }
+body.ui-v2 #app .tabs .tab.active { border-bottom-color: transparent; }
+body.ui-v2 #app .tabs .tab.active::after {
+  content: ""; position: absolute; left: 18%; right: 18%; bottom: -1px; height: 2px;
+  background: var(--azul); border-radius: 2px; box-shadow: 0 0 10px rgba(30,127,239,.6);
+}
+body.ui-v2 #app .search input { border-radius: var(--r-1); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+body.ui-v2 #app .search input:focus { box-shadow: var(--ring); }
+
+/* ---------- Tarjetas de vehículo ---------- */
+body.ui-v2 #app #fleet { padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+body.ui-v2 #app .row {
+  position: relative; border: 1px solid var(--line-soft);
+  border-radius: var(--r-2); background: var(--panel-2); padding: 11px 13px 11px 15px;
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+  overflow: hidden;
+}
+body.ui-v2 #app .row::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--muted); transition: background var(--t-fast);
+}
+body.ui-v2 #app .row:hover { transform: translateY(-1px); border-color: var(--line); box-shadow: var(--e-2); background: var(--panel-3); }
+body.ui-v2 #app .row.sel { border-color: var(--azul); background: rgba(30,127,239,.1); box-shadow: var(--e-2); }
+body.ui-v2 #app .row.sel::before { background: var(--azul); box-shadow: 0 0 10px rgba(30,127,239,.7); }
+/* El punto de ignición pinta la franja lateral por estado, sin tocar JS */
+body.ui-v2 #app .row:has(.ign.on)::before { background: var(--live); }
+body.ui-v2 #app .row:has(.ign.off)::before { background: var(--danger); }
+body.ui-v2 #app .row .name { font-size: 14.5px; }
+body.ui-v2 #app .row .plate { box-shadow: 0 1px 3px rgba(30,127,239,.4); }
+body.ui-v2 #app .row .sub { margin-top: 6px; }
+body.ui-v2 #app .chip { border-radius: var(--r-pill); padding: 2px 8px; letter-spacing: .6px; }
+body.ui-v2 #app .chip.mov { background: rgba(22,179,100,.12); }
+body.ui-v2 #app .chip.off { background: rgba(229,72,77,.1); }
+
+/* Estado vacío del panel de flota (cuando aún no hay vehículos) */
+body.ui-v2 #app #fleet:empty::after {
+  content: "Esperando reportes de la flota…";
+  display: block; padding: 40px 18px; text-align: center;
+  color: var(--muted); font-size: 13px;
+}
+
+body.ui-v2 #app .mini-actions { background: var(--panel); }
+body.ui-v2 #app .mini-actions button { border-radius: var(--r-1); }
+
+/* ---------- Controles del mapa (Leaflet) ---------- */
+body.ui-v2 #app .leaflet-bar {
+  border: 1px solid var(--line) !important; border-radius: var(--r-1) !important;
+  overflow: hidden; box-shadow: var(--e-2) !important;
+}
+body.ui-v2 #app .leaflet-bar a {
+  background: rgba(19,31,48,.92); color: var(--text);
+  backdrop-filter: blur(4px); transition: background var(--t-fast);
+}
+body.ui-v2 #app .leaflet-bar a:hover { background: var(--panel-3); color: #fff; }
+body.ui-v2 #app .leaflet-control-zoom-in,
+body.ui-v2 #app .leaflet-control-zoom-out { font-size: 17px; }
+body.ui-v2 #app .leaflet-popup-content-wrapper { border-radius: var(--r-2); box-shadow: var(--e-2); border: 1px solid var(--line); }
+
+/* Marcador seleccionado: halo suave */
+body.ui-v2 #app .veh { transition: filter var(--t-fast); }
+body.ui-v2 #app .veh .label { border-radius: var(--r-1); box-shadow: var(--e-1); backdrop-filter: blur(3px); }
+
+/* ---------- Banner / toast ---------- */
+body.ui-v2 #app #banner { border-bottom: 1px solid rgba(245,165,36,.28); }
+body.ui-v2 #app .toast { border-radius: var(--r-2); box-shadow: var(--e-3); backdrop-filter: blur(6px); }
+
+/* ---------- Superficies compartidas (detalle/alertas/modales, toque leve) ---------- */
+body.ui-v2 #app #detail,
+body.ui-v2 #app #alerts { background: var(--panel); box-shadow: var(--e-3); }
+body.ui-v2 #app .cell,
+body.ui-v2 #app .kpi,
+body.ui-v2 #app .admin-row,
+body.ui-v2 #app .sms-step { border-radius: var(--r-2); }
+body.ui-v2 #app .cell { transition: border-color var(--t-fast); }
+body.ui-v2 #app .abadge { border-radius: var(--r-pill); }
+body.ui-v2 #app .modal-box { border-radius: var(--r-3); box-shadow: var(--e-3); }
+body.ui-v2 #app .al-item { transition: background var(--t-fast); }
+body.ui-v2 #app .al-item::after {
+  /* Refuerzo no-cromático de severidad (no depender solo del color) */
+  content: ""; position: absolute;
+}
+body.ui-v2 #app .al-item { position: relative; }
+
+/* Skeletons reutilizables para estados de carga (los usará una etapa con JS) */
+body.ui-v2 #app .skeleton {
+  position: relative; overflow: hidden; background: var(--panel-2);
+  border-radius: var(--r-1); color: transparent;
+}
+body.ui-v2 #app .skeleton::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  transform: translateX(-100%); animation: uiv2-shimmer 1.3s infinite;
+}
+@keyframes uiv2-shimmer { 100% { transform: translateX(100%); } }
+
+/* ---------- Adaptable: más breakpoints y objetivos táctiles ---------- */
+@media (max-width: 1024px) {
+  body.ui-v2 #app aside { width: 300px; }
+  body.ui-v2 #app #detail { width: 340px; }
+}
+@media (max-width: 900px) {
+  /* Objetivos táctiles cómodos y sin desbordes horizontales */
+  body.ui-v2 #app button,
+  body.ui-v2 #app .icon-btn { min-height: 44px; }
+  body.ui-v2 #app #fleet { padding: 8px; }
+  body.ui-v2 #app main { overflow-x: hidden; }
+}
+@media (max-width: 560px) {
+  body.ui-v2 #app header { padding: 8px 12px; gap: 10px; }
+  body.ui-v2 #app .live { display: none; }
+  body.ui-v2 #app #player { width: calc(100% - 20px); }
+}
+
+/* ============================================================================
+   ETAPA 2 — Detalle, alertas, reproductor, reportes, microinteracciones
+   Todo CSS, scopeado a body.ui-v2 #app, reutilizando clases/IDs existentes.
+   ========================================================================= */
+
+/* ---------- Panel de detalle ---------- */
+body.ui-v2 #app #detail { border-left: 1px solid var(--line); }
+body.ui-v2 #app .dt-head {
+  background: linear-gradient(180deg, rgba(30,127,239,.08), transparent);
+  border-bottom: 1px solid var(--line);
+}
+body.ui-v2 #app .dt-head .ign { width: 10px; height: 10px; }
+body.ui-v2 #app .dt-head .close {
+  width: 32px; height: 32px; border-radius: var(--r-1); display: flex;
+  align-items: center; justify-content: center; transition: background var(--t-fast), color var(--t-fast);
+}
+body.ui-v2 #app .dt-head .close:hover { background: var(--panel-3); }
+
+/* Telemetría: celdas con acento y jerarquía */
+body.ui-v2 #app .telemetry { gap: 9px; }
+body.ui-v2 #app .cell {
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  transition: border-color var(--t-fast), transform var(--t-fast);
+}
+body.ui-v2 #app .cell:hover { border-color: var(--line); }
+body.ui-v2 #app .cell .k { letter-spacing: .8px; }
+body.ui-v2 #app .compass { filter: drop-shadow(0 0 4px rgba(30,127,239,.5)); }
+
+/* Encabezados de sección como divisor etiquetado */
+body.ui-v2 #app .dt-section {
+  display: flex; align-items: center; gap: 10px; letter-spacing: 1.8px;
+  margin: 18px 0 9px;
+}
+body.ui-v2 #app .dt-section::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+body.ui-v2 #app .addr { border-radius: var(--r-2); line-height: 1.55; }
+
+/* Acciones: el CTA primario resalta */
+body.ui-v2 #app #dt-follow.primary { box-shadow: 0 4px 14px rgba(30,127,239,.32); }
+body.ui-v2 #app #dt-gmaps { border-color: var(--line); }
+body.ui-v2 #app #dt-gmaps:hover { border-color: var(--azul); background: var(--azul-soft); }
+body.ui-v2 #app .editform input { border-radius: var(--r-1); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+body.ui-v2 #app .editform input:focus { box-shadow: var(--ring); }
+body.ui-v2 #app .route-stats .cell .v { color: var(--text); }
+
+/* ---------- Alertas ---------- */
+body.ui-v2 #app .al-head {
+  background: linear-gradient(180deg, rgba(30,127,239,.06), transparent);
+}
+body.ui-v2 #app .al-item {
+  padding-left: 16px; border-bottom: 1px solid var(--line-soft);
+}
+body.ui-v2 #app .al-item::before {
+  /* Franja de severidad a la izquierda (refuerzo no cromático + color) */
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--info);
+}
+body.ui-v2 #app .al-item:has(.al-dot.critical)::before { background: var(--danger); }
+body.ui-v2 #app .al-item:has(.al-dot.warning)::before { background: var(--warn); }
+/* Severidad diferenciada por FORMA (no solo color), para accesibilidad */
+body.ui-v2 #app .al-dot { border-radius: 3px; }                                   /* warning: cuadrado */
+body.ui-v2 #app .al-dot.critical { border-radius: 50%; box-shadow: 0 0 0 3px rgba(229,72,77,.25), 0 0 6px rgba(229,72,77,.6); } /* crítico: círculo con anillo */
+body.ui-v2 #app .al-dot.info { border-radius: 50%; width: 8px; height: 8px; margin-top: 5px; }  /* info: punto pequeño */
+body.ui-v2 #app .al-item.ack { opacity: .55; }
+body.ui-v2 #app .al-item.ack .al-msg { text-decoration: line-through; text-decoration-color: var(--muted); }
+body.ui-v2 #app .al-item.ack::after {
+  content: "✓ visto"; position: absolute; right: 12px; top: 12px;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .5px; color: var(--live);
+}
+body.ui-v2 #app #al-ackall { border-radius: var(--r-1); }
+
+/* ---------- Reproductor de recorridos ---------- */
+body.ui-v2 #app #player {
+  border-radius: var(--r-3); box-shadow: var(--e-3);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+}
+body.ui-v2 #app .pl-top .clock { font-size: 12.5px; }
+body.ui-v2 #app .pl-top .spd {
+  background: rgba(9,16,26,.5); border: 1px solid var(--line-soft);
+  border-radius: var(--r-pill); padding: 2px; gap: 2px;
+}
+body.ui-v2 #app .pl-top .spd button { border: none; border-radius: var(--r-pill); background: transparent; }
+body.ui-v2 #app .pl-top .spd button:hover { background: rgba(255,255,255,.05); }
+body.ui-v2 #app .pl-top .spd button.active { box-shadow: 0 2px 8px rgba(30,127,239,.4); }
+body.ui-v2 #app .pl-controls button.play {
+  border-radius: 50%; background: var(--azul); color: #fff; border-color: var(--azul);
+  box-shadow: 0 4px 14px rgba(30,127,239,.4); width: 40px; height: 40px;
+}
+body.ui-v2 #app .pl-controls button.play:hover { background: #1a6fd4; }
+/* Barra de progreso moderna (cross-browser) */
+body.ui-v2 #app #pl-range { height: 6px; border-radius: var(--r-pill); appearance: none; background: var(--panel-3); }
+body.ui-v2 #app #pl-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--azul); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer;
+}
+body.ui-v2 #app #pl-range::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%; background: var(--azul);
+  border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer;
+}
+
+/* ---------- Reportes (modal) ---------- */
+body.ui-v2 #app .modal-head {
+  background: linear-gradient(180deg, var(--panel), rgba(19,31,48,.96));
+  border-bottom: 1px solid var(--line);
+}
+body.ui-v2 #app .kpi {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line-soft); position: relative; overflow: hidden;
+  transition: border-color var(--t-fast), transform var(--t-fast);
+}
+body.ui-v2 #app .kpi:hover { border-color: var(--line); transform: translateY(-2px); }
+body.ui-v2 #app .kpi::before {
+  content: ""; position: absolute; left: 0; top: 0; width: 3px; height: 100%;
+  background: linear-gradient(var(--azul), var(--live)); opacity: .7;
+}
+body.ui-v2 #app .kpi .v { color: var(--text); }
+body.ui-v2 #app .chart-wrap { background: var(--panel-2); border-radius: var(--r-2); }
+body.ui-v2 #app table.trips thead th {
+  position: sticky; top: 0; background: var(--panel); z-index: 1;
+}
+body.ui-v2 #app table.trips tbody tr { transition: background var(--t-fast); }
+
+/* ---------- Administración / SMS (coherencia) ---------- */
+body.ui-v2 #app .admin-row {
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  transition: border-color var(--t-fast), transform var(--t-fast);
+}
+body.ui-v2 #app .admin-row:hover { border-color: var(--line); }
+body.ui-v2 #app .r-tag { border-radius: var(--r-pill); }
+body.ui-v2 #app .form-grid input,
+body.ui-v2 #app .form-grid select { border-radius: var(--r-1); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+body.ui-v2 #app .form-grid input:focus,
+body.ui-v2 #app .form-grid select:focus { box-shadow: var(--ring); }
+body.ui-v2 #app .sms-step { transition: border-color var(--t-fast), transform var(--t-fast); }
+body.ui-v2 #app .sms-step:hover { transform: translateX(2px); border-color: var(--azul); }
+body.ui-v2 #app .sms-step .s-num { box-shadow: 0 2px 8px rgba(30,127,239,.4); }
+
+/* ---------- Microinteracciones: entrada de modales/paneles ---------- */
+body.ui-v2 #app .modal.open .modal-box { animation: uiv2-pop .22s cubic-bezier(.2,.7,.2,1); }
+@keyframes uiv2-pop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+body.ui-v2 #app .toast { animation: uiv2-toast .28s cubic-bezier(.2,.7,.2,1); }
+@keyframes uiv2-toast { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+body.ui-v2 #app .draw-hint { border-radius: var(--r-2); box-shadow: 0 6px 20px rgba(30,127,239,.5); }
+
+/* Franja/acento de la píldora de capa del mapa a tono */
+body.ui-v2 #app .leaflet-control-attribution {
+  background: rgba(19,31,48,.75) !important; color: var(--muted) !important;
+  border-radius: var(--r-1) 0 0 0;
+}
+body.ui-v2 #app .leaflet-control-attribution a { color: var(--azul) !important; }
+
+/* ============================================================================
+   ETAPA 3 (móvil) — Detalle y alertas como HOJA INFERIOR deslizable, con el
+   mapa visible arriba y botón de cerrar grande. Corrige el problema de no
+   poder cerrar el detalle en el celular. Necesita ui-v2.js para el "toque
+   fuera para cerrar" y Escape (ambos aditivos, no tocan app.js).
+   ========================================================================= */
+
+/* Velo (scrim) para tocar fuera y cerrar — solo visible en móvil cuando hay
+   un panel abierto (lo activa ui-v2.js con la clase .show). */
+body.ui-v2 .uiv2-scrim { display: none; position: fixed; inset: 0; background: rgba(6,12,20,.5); z-index: 560; }
+
+@media (max-width: 900px) {
+  body.ui-v2 .uiv2-scrim.show { display: block; }
+
+  /* #detail y #alerts pasan a ser hojas que suben desde abajo */
+  body.ui-v2 #app #detail,
+  body.ui-v2 #app #alerts {
+    top: auto; bottom: 0; left: 0; right: 0; width: 100%;
+    height: min(82vh, 640px);
+    border-left: none; border-top: 1px solid var(--line);
+    border-radius: 18px 18px 0 0;
+    transform: translateY(100%);
+    transition: transform .26s cubic-bezier(.2,.7,.2,1);
+    box-shadow: 0 -14px 34px rgba(0,0,0,.55);
+  }
+  body.ui-v2 #app #detail.open,
+  body.ui-v2 #app #alerts.open { transform: translateY(0); }
+
+  /* Encabezado pegajoso con asa (grabber) para que se lea como hoja */
+  body.ui-v2 #app #detail .dt-head,
+  body.ui-v2 #app #alerts .al-head {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--panel); border-radius: 18px 18px 0 0; padding-top: 20px;
+  }
+  body.ui-v2 #app #detail .dt-head::before,
+  body.ui-v2 #app #alerts .al-head::before {
+    content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 4px; border-radius: 999px; background: var(--line);
+  }
+
+  /* Botón de cerrar GRANDE y visible (44×44, círculo con contraste) */
+  body.ui-v2 #app #detail .dt-head .close,
+  body.ui-v2 #app #alerts .al-head .close {
+    width: 44px; height: 44px; border-radius: 50%; margin-left: auto;
+    background: var(--panel-3); color: var(--text); font-size: 22px; line-height: 1;
+    border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+  }
+  body.ui-v2 #app #detail .dt-head .close:active,
+  body.ui-v2 #app #alerts .al-head .close:active { background: var(--azul); border-color: var(--azul); }
+
+  /* El reproductor sube por encima de la hoja para no quedar tapado */
+  body.ui-v2 #app #player { z-index: 660; }
+}
+
+/* ============================================================================
+   ETAPA 3-4 — Búsqueda en administración, foco de teclado, pulido móvil
+   ========================================================================= */
+
+/* Buscador local de administración (lo inyecta ui-v2.js) */
+body.ui-v2 #app .uiv2-admin-search {
+  width: 100%; margin: 2px 0 12px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--panel-2); color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+body.ui-v2 #app .uiv2-admin-search::placeholder { color: var(--muted); }
+body.ui-v2 #app .uiv2-admin-search:focus { outline: none; box-shadow: var(--ring); border-color: var(--azul); }
+
+/* Foco de teclado visible en pestañas (rol tab) */
+body.ui-v2 #app .tab:focus-visible { box-shadow: inset 0 0 0 2px var(--azul); border-radius: var(--r-1); }
+
+/* Pulido móvil de modales (administración, reportes, SMS) */
+@media (max-width: 640px) {
+  body.ui-v2 #app .modal { align-items: flex-end; }
+  body.ui-v2 #app .modal-box {
+    width: 100%; max-height: 92vh; border-radius: 18px 18px 0 0;
+    animation: uiv2-sheet .26s cubic-bezier(.2,.7,.2,1);
+  }
+  body.ui-v2 #app .modal-head { border-radius: 18px 18px 0 0; padding-top: 18px; }
+  body.ui-v2 #app .modal-head::before {
+    content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 4px; border-radius: 999px; background: var(--line);
+  }
+  body.ui-v2 #app .modal-head .close { width: 40px; height: 40px; border-radius: 50%; background: var(--panel-3); display: flex; align-items: center; justify-content: center; }
+  body.ui-v2 #app .kpis { grid-template-columns: 1fr 1fr; }
+  body.ui-v2 #app .admin-row { flex-wrap: wrap; }
+}
+@keyframes uiv2-sheet { from { transform: translateY(100%); } to { transform: none; } }
+
+/* ============================================================================
+   ETAPA 4 — Detalle con pestañas, filtros de alertas, plegado, nav móvil
+   ========================================================================= */
+
+/* ---------- Panel de detalle: acciones fijas + pestañas ---------- */
+body.ui-v2 #app .uiv2-dt-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--line-soft);
+}
+body.ui-v2 #app .uiv2-dt-actions button { width: 100%; }
+body.ui-v2 #app .uiv2-dt-tabs {
+  display: flex; gap: 2px; border-bottom: 1px solid var(--line);
+  margin: 0 -14px 12px; padding: 0 14px; overflow-x: auto; scrollbar-width: none;
+}
+body.ui-v2 #app .uiv2-dt-tabs::-webkit-scrollbar { display: none; }
+body.ui-v2 #app .uiv2-dt-tabs .tab {
+  flex: 0 0 auto; padding: 9px 12px; font-size: 11.5px; letter-spacing: .6px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--muted); font-family: var(--font-display); font-weight: 600; cursor: pointer;
+  border-radius: 0; white-space: nowrap;
+}
+body.ui-v2 #app .uiv2-dt-tabs .tab:hover { color: var(--text); transform: none; }
+body.ui-v2 #app .uiv2-dt-tabs .tab.active { color: var(--text); border-bottom-color: var(--azul); }
+body.ui-v2 #app .uiv2-dt-tabs .tab.active::after { content: none; }
+body.ui-v2 #app .uiv2-dt-panel { display: none; animation: uiv2-fade .18s ease; }
+body.ui-v2 #app .uiv2-dt-panel.active { display: block; }
+@keyframes uiv2-fade { from { opacity: 0; } to { opacity: 1; } }
+/* La primera sección de cada panel ya no necesita margen superior */
+body.ui-v2 #app .uiv2-dt-panel > .dt-section:first-child { margin-top: 0; }
+
+/* ---------- Alertas: filtros y agrupación por fecha ---------- */
+body.ui-v2 #app .uiv2-al-filters {
+  padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--panel);
+  display: flex; flex-direction: column; gap: 8px;
+}
+body.ui-v2 #app .uiv2-chips { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px; }
+body.ui-v2 #app .uiv2-chips::-webkit-scrollbar { display: none; }
+body.ui-v2 #app .uiv2-chip {
+  flex: 0 0 auto; padding: 5px 11px; font-size: 11.5px; border-radius: var(--r-pill);
+  background: var(--panel-2); border: 1px solid var(--line-soft); color: var(--muted);
+}
+body.ui-v2 #app .uiv2-chip:hover { color: var(--text); border-color: var(--line); }
+body.ui-v2 #app .uiv2-chip.active { background: var(--azul-soft); border-color: var(--azul); color: var(--text); }
+body.ui-v2 #app .uiv2-al-search {
+  width: 100%; padding: 8px 11px; border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--panel-2); color: var(--text); font-family: var(--font-body); font-size: 12.5px;
+}
+body.ui-v2 #app .uiv2-al-search:focus { outline: none; box-shadow: var(--ring); border-color: var(--azul); }
+body.ui-v2 #app .uiv2-day {
+  position: sticky; top: 0; z-index: 1;
+  padding: 6px 14px; background: var(--panel-2); border-bottom: 1px solid var(--line-soft);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ---------- Destello al llegar una posición nueva ---------- */
+@keyframes uiv2-ping { 0% { box-shadow: inset 0 0 0 0 rgba(30,127,239,.5); } 40% { box-shadow: inset 0 0 0 2px rgba(30,127,239,.45); } 100% { box-shadow: inset 0 0 0 0 rgba(30,127,239,0); } }
+body.ui-v2 #app .row.uiv2-ping { animation: uiv2-ping .85s ease-out; }
+
+/* ---------- Esqueletos de carga ---------- */
+body.ui-v2 #app .uiv2-skeletons { display: flex; flex-direction: column; gap: 8px; }
+body.ui-v2 #app .uiv2-sk-row {
+  height: 62px; border-radius: var(--r-2); background: var(--panel-2);
+  border: 1px solid var(--line-soft); position: relative; overflow: hidden;
+}
+body.ui-v2 #app .uiv2-sk-row::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
+  transform: translateX(-100%); animation: uiv2-shimmer 1.3s infinite;
+}
+
+/* ---------- Panel lateral plegable (escritorio) ---------- */
+body.ui-v2 #app .uiv2-collapse {
+  position: absolute; top: 12px; left: 340px; z-index: 500;
+  width: 26px; height: 46px; padding: 0; border-radius: 0 var(--r-1) var(--r-1) 0;
+  background: var(--panel); border: 1px solid var(--line); border-left: none;
+  display: flex; align-items: center; justify-content: center; color: var(--muted);
+  transition: left var(--t-mid), color var(--t-fast), background var(--t-fast);
+}
+body.ui-v2 #app .uiv2-collapse:hover { color: var(--text); background: var(--panel-3); transform: none; }
+body.ui-v2 #app aside { transition: width var(--t-mid), opacity var(--t-mid); }
+/* flex: 0 0 0 además de width/min-width: los elementos flex tienen
+   min-width:auto y no encogen bajo el ancho de su contenido sin esto. */
+body.ui-v2.uiv2-aside-collapsed #app aside {
+  width: 0; min-width: 0; flex: 0 0 0;
+  padding: 0; border-right: none; overflow: hidden;
+  opacity: 0; pointer-events: none;
+}
+body.ui-v2.uiv2-aside-collapsed #app .uiv2-collapse { left: 0; }
+@media (max-width: 1024px) {
+  body.ui-v2 #app .uiv2-collapse { left: 300px; }
+}
+
+/* ---------- Navegación inferior (solo móvil) ---------- */
+body.ui-v2 #app .uiv2-bottomnav { display: none; }
+@media (max-width: 900px) {
+  body.ui-v2 #app .uiv2-bottomnav {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 700;
+    background: var(--panel); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  body.ui-v2 #app .uiv2-bottomnav button {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    min-height: 56px; padding: 8px 4px; border: none; border-radius: 0; background: none;
+    color: var(--muted); font-size: 10.5px; font-family: var(--font-body);
+  }
+  body.ui-v2 #app .uiv2-bottomnav button:hover { transform: none; }
+  body.ui-v2 #app .uiv2-bottomnav button.active { color: var(--azul); }
+  body.ui-v2 #app .uiv2-bottomnav button.active::before {
+    content: ""; position: absolute; top: 0; left: 24%; right: 24%; height: 2px;
+    background: var(--azul); border-radius: 0 0 2px 2px;
+  }
+  body.ui-v2 #app .uiv2-nav-badge {
+    position: absolute; top: 5px; right: 50%; margin-right: -20px;
+    min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+    background: var(--danger); color: #fff; font-size: 9.5px; font-style: normal;
+    font-family: var(--font-mono); display: flex; align-items: center; justify-content: center;
+  }
+  /* Deja sitio a la barra inferior */
+  body.ui-v2 #app main { padding-bottom: 56px; }
+  body.ui-v2 #app #detail, body.ui-v2 #app #alerts { bottom: 56px; }
+  body.ui-v2 #app #player { bottom: 68px; }
+  body.ui-v2 #app .uiv2-collapse { display: none; }
+  /* Vista "Mapa": el panel de flota se esconde y el mapa ocupa todo */
+  body.ui-v2.uiv2-map-full #app aside { display: none; }
+}
+
+/* Buscador local de administración (lo inyecta ui-v2.js) */
+body.ui-v2 #app .uiv2-admin-search {
+  width: 100%; margin: 2px 0 12px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--panel-2); color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+body.ui-v2 #app .uiv2-admin-search::placeholder { color: var(--muted); }
+body.ui-v2 #app .uiv2-admin-search:focus { outline: none; box-shadow: var(--ring); border-color: var(--azul); }
+
+/* Foco de teclado visible en pestañas (rol tab) */
+body.ui-v2 #app .tab:focus-visible { box-shadow: inset 0 0 0 2px var(--azul); border-radius: var(--r-1); }
+
+/* Pulido móvil de modales (administración, reportes, SMS) */
+@media (max-width: 640px) {
+  body.ui-v2 #app .modal { align-items: flex-end; }
+  body.ui-v2 #app .modal-box {
+    width: 100%; max-height: 92vh; border-radius: 18px 18px 0 0;
+    animation: uiv2-sheet .26s cubic-bezier(.2,.7,.2,1);
+  }
+  body.ui-v2 #app .modal-head { border-radius: 18px 18px 0 0; padding-top: 18px; }
+  body.ui-v2 #app .modal-head::before {
+    content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 4px; border-radius: 999px; background: var(--line);
+  }
+  body.ui-v2 #app .modal-head .close { width: 40px; height: 40px; border-radius: 50%; background: var(--panel-3); display: flex; align-items: center; justify-content: center; }
+  body.ui-v2 #app .kpis { grid-template-columns: 1fr 1fr; }
+  body.ui-v2 #app .admin-row { flex-wrap: wrap; }
+  body.ui-v2 #app .uiv2-dt-actions { grid-template-columns: 1fr 1fr; }
+}
+@keyframes uiv2-sheet { from { transform: translateY(100%); } to { transform: none; } }
+
+/* Respeta el movimiento reducido en todas las mejoras de esta capa */
+@media (prefers-reduced-motion: reduce) {
+  body.ui-v2 #app *,
+  body.ui-v2 #app *::before,
+  body.ui-v2 #app *::after { transition: none !important; animation: none !important; }
+  body.ui-v2 #app button:hover,
+  body.ui-v2 #app .row:hover,
+  body.ui-v2 #app .icon-btn:hover,
+  body.ui-v2 #app .kpi:hover,
+  body.ui-v2 #app .sms-step:hover { transform: none !important; }
+}

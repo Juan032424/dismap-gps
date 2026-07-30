@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manual de uso · DISMAP GPS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%231E7FEF'/%3E%3Cpath d='M20 8c-4.4 0-8 3.4-8 7.6 0 5.4 8 12.4 8 12.4s8-7 8-12.4C28 11.4 24.4 8 20 8z' fill='white'/%3E%3Ccircle cx='20' cy='15.5' r='3.2' fill='%2316B364'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <svg width="38" height="38" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <path d="M27.5 9.5a6.4 6.4 0 0 1 5.4 5.4" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M27 4.6a11 11 0 0 1 9 9" stroke="#1E7FEF" stroke-width="2.6" stroke-linecap="round" opacity="0.45"/>
+      <path d="M16 3.5C9.9 3.5 5 8.2 5 14.3c0 7.9 11 21 11 21s11-13.1 11-21C27 8.2 22.1 3.5 16 3.5Z" fill="#1E7FEF"/>
+      <circle cx="16" cy="14.2" r="4.6" fill="#16B364"/>
+    </svg>
+    <div class="brand">DIS<span>MAP</span><small>Tu flota segura y bajo control</small></div>
+    <a class="back" href="index.html">← Documentación</a>
+  </div>
+
+  <div class="printbar"><button type="button" onclick="window.print()">Guardar como PDF</button></div>
+
+  <h1>Manual de uso del panel</h1>
+  <p class="lede">Cómo operar DISMAP en el día a día: ver dónde está cada vehículo, revisar
+    alertas, sacar reportes y administrar la flota.</p>
+
+  <h2>Entrar al sistema</h2>
+  <p>Abre el panel en tu navegador y escribe tu correo y contraseña. La sesión dura
+    <strong>12 horas</strong>; después el sistema te pide entrar de nuevo por seguridad.</p>
+  <div class="note warn">
+    <b>La primera vez</b>
+    Cambia la contraseña que te entregaron. Si eres administrador, crea las cuentas de tu equipo
+    en vez de compartir la tuya: así cada quien tiene sus permisos y sabes quién hizo qué.
+  </div>
+
+  <h2>Qué puede hacer cada rol</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Acción</th><th>Operador</th><th>Administrador</th><th>Super Admin</th></tr></thead>
+      <tbody>
+        <tr><td>Ver el mapa y la flota en vivo</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Ver recorridos, alertas y reportes</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Registrar equipos GPS y vehículos</td><td>—</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Editar la ficha de un vehículo</td><td>—</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Crear y borrar geocercas</td><td>—</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Crear usuarios operadores</td><td>—</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Crear administradores y super admins</td><td>—</td><td>—</td><td>Sí</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Al operador simplemente no le aparecen los botones que no puede usar. No es solo la pantalla:
+    el servidor también rechaza esas acciones aunque se intenten por otra vía.</p>
+
+  <h2>La pantalla principal</h2>
+  <p>El panel tiene tres zonas: la <strong>lista de flota</strong> a la izquierda, el
+    <strong>mapa</strong> en el centro y la <strong>ficha del vehículo</strong> que se abre a la
+    derecha cuando seleccionas uno.</p>
+
+  <h3>Los contadores de arriba</h3>
+  <p>Muestran cuántos vehículos hay en cada estado y <strong>funcionan como filtros</strong>:
+    haz clic en «Movimiento» y la lista deja solo los que van andando.</p>
+  <ul class="plain">
+    <li><strong>Movimiento</strong> — va a más de 2 km/h.</li>
+    <li><strong>Detenidos</strong> — reporta, pero está parado.</li>
+    <li><strong>Sin señal</strong> — lleva más de 10 minutos sin reportar.</li>
+  </ul>
+
+  <h3>Los colores del mapa</h3>
+  <ul class="plain">
+    <li><span class="mono" style="color:#16B364">Verde</span> — vehículo en movimiento.</li>
+    <li><span class="mono" style="color:#8497B0">Gris</span> — detenido.</li>
+    <li><span class="mono" style="color:#4A5D78">Gris oscuro</span> — sin señal.</li>
+  </ul>
+  <p>La flecha apunta hacia donde va el vehículo, y la línea azul detrás es su recorrido reciente.
+    Con el botón <strong>Etiquetas</strong> muestras la placa sobre cada uno, y con
+    <strong>Ver toda la flota</strong> el mapa se ajusta para que quepan todos.</p>
+  <p>Arriba a la derecha del mapa puedes cambiar la vista: <strong>Oscuro</strong>,
+    <strong>Satélite</strong> (útil para ver patios, bodegas y accesos) y <strong>Calles</strong>.</p>
+
+  <h2>Seguir un vehículo</h2>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><div class="num">1</div><div class="step-title">Selecciónalo</div></div>
+      <p>Haz clic en el vehículo, ya sea en la lista o directamente sobre el mapa. Se abre su ficha
+        a la derecha con toda la telemetría en vivo: velocidad, rumbo, estado del motor, batería,
+        calidad de la señal GPS y hace cuánto reportó.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">2</div><div class="step-title">Actívale «Seguir»</div></div>
+      <p>El mapa se mueve solo detrás del vehículo cada vez que reporta. Ideal para acompañar una
+        entrega en curso. Vuelve a pulsarlo para soltar la cámara.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">3</div><div class="step-title">Averigua dónde está exactamente</div></div>
+      <p><strong>Ver dirección</strong> traduce las coordenadas a una dirección con nombre de calle.
+        <strong>Copiar coords</strong> te deja el punto listo para pegarlo en WhatsApp, y
+        <strong>Abrir en Google Maps</strong> sirve para mandarle la ruta a alguien.</p>
+    </li>
+  </ol>
+
+  <h2>Ver por dónde anduvo</h2>
+  <p>En la ficha del vehículo, sección <strong>Recorrido 24 h</strong>:</p>
+  <ul class="plain">
+    <li><strong>Ver recorrido</strong> dibuja el trayecto del último día, con el inicio en verde y
+      el final en rojo, y te calcula distancia, velocidad máxima, promedio y número de paradas.</li>
+    <li><strong>Reproducir</strong> anima el viaje como una película. Puedes pausar, arrastrar la
+      línea de tiempo y acelerar a 4×, 16× o 60× para revisar un día entero en poco tiempo.</li>
+    <li><strong>Exportar GPX</strong> descarga el recorrido para abrirlo en Google Earth u otros
+      programas de mapas.</li>
+  </ul>
+  <div class="note info">
+    <b>Para qué sirve en la práctica</b>
+    Verificar si un vehículo pasó por donde debía, cuánto tiempo estuvo detenido en un cliente, o
+    reconstruir un recorrido cuando hay un reclamo o un incidente.
+  </div>
+
+  <h2>Reportes</h2>
+  <p>El botón <strong>📊 Reporte</strong> abre el resumen del vehículo en las últimas 24 horas:</p>
+  <ul class="plain">
+    <li><strong>Ocho indicadores</strong>: distancia total, velocidad máxima y promedio, número de
+      paradas, minutos en marcha, minutos detenido, cantidad de viajes y muestras recibidas.</li>
+    <li><strong>Gráfico por hora</strong>: las barras azules son los kilómetros recorridos en cada
+      hora y la línea verde la velocidad máxima alcanzada. Sirve para ver a qué horas trabaja de
+      verdad el vehículo.</li>
+    <li><strong>Tabla de viajes</strong>: cada trayecto con hora de inicio y fin, duración,
+      distancia y velocidad máxima. El sistema separa los viajes automáticamente cuando el vehículo
+      se detiene más de 5 minutos.</li>
+    <li><strong>Exportar CSV</strong> descarga esa tabla para abrirla en Excel.</li>
+  </ul>
+
+  <h2>Alertas</h2>
+  <p>La campana <strong>🔔</strong> del encabezado muestra cuántas alertas hay sin revisar. Al
+    abrirla ves el historial; al hacer clic en una, el mapa vuela al punto exacto donde ocurrió y
+    la alerta queda marcada como vista.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Alerta</th><th>Cuándo salta</th><th>Prioridad</th></tr></thead>
+      <tbody>
+        <tr><td>Botón SOS</td><td>El conductor presiona el botón de emergencia del equipo</td><td>Crítica</td></tr>
+        <tr><td>Corte de energía</td><td>Le quitaron la corriente o desconectaron la batería</td><td>Crítica</td></tr>
+        <tr><td>Exceso de velocidad</td><td>Supera el límite configurado para ese vehículo</td><td>Advertencia</td></tr>
+        <tr><td>Salida de geocerca</td><td>El vehículo sale de una zona autorizada</td><td>Advertencia</td></tr>
+        <tr><td>Batería baja</td><td>La batería del equipo baja del 20 %</td><td>Advertencia</td></tr>
+        <tr><td>Entrada a geocerca</td><td>El vehículo llega a una zona marcada</td><td>Informativa</td></tr>
+        <tr><td>Motor encendido / apagado</td><td>Se enciende o apaga el vehículo</td><td>Informativa</td></tr>
+        <tr><td>Inicio / fin de movimiento</td><td>Arranca o se detiene</td><td>Informativa</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Las alertas identifican al vehículo y al conductor asignado. Por ejemplo:
+    <code>DOC001 (Pedro Ruiz): exceso de velocidad 111 km/h (límite 70)</code>.</p>
+  <div class="note ok">
+    <b>No te va a inundar de mensajes</b>
+    Las alertas saltan solo cuando <em>cambia</em> la situación, no en cada reporte. Un vehículo que
+    va 20 minutos por encima del límite genera una alerta, no cien.
+  </div>
+
+  <h2>Geocercas: vigilar zonas</h2>
+  <p>Una geocerca es un área del mapa que quieres vigilar: una bodega, la zona de reparto
+    autorizada, un cliente importante. El sistema avisa cuando un vehículo entra o sale.</p>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><div class="num">1</div><div class="step-title">Abre la pestaña Geocercas</div></div>
+      <p>Está arriba del panel de flota, a la izquierda.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">2</div><div class="step-title">Elige la forma</div></div>
+      <p><strong>+ Círculo</strong>: un clic marca el centro y otro define el radio. Perfecto para
+        una bodega o un punto de entrega.</p>
+      <p><strong>+ Polígono</strong>: haz clic en cada esquina y doble clic para cerrar. Útil para
+        zonas irregulares como un barrio o una ruta autorizada.</p>
+    </li>
+    <li class="step">
+      <div class="step-head"><div class="num">3</div><div class="step-title">Ponle nombre</div></div>
+      <p>Ese nombre es el que aparecerá en las alertas («salió de la zona Bodega Norte»), así que
+        usa uno que reconozcas de inmediato.</p>
+    </li>
+  </ol>
+  <p>Desde la lista puedes <strong>ocultar</strong> una zona del mapa sin borrarla, o
+    <strong>eliminarla</strong> definitivamente.</p>
+
+  <h2>Administración</h2>
+  <p>El botón <strong>⚙</strong> del encabezado (solo administradores) abre dos pestañas.</p>
+
+  <h3>Dispositivos</h3>
+  <p>Aquí registras los equipos GPS. El único dato obligatorio es el <strong>ID del GPS</strong>;
+    el resto ayuda a que la información sea útil:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Campo</th><th>Para qué sirve realmente</th></tr></thead>
+      <tbody>
+        <tr><td>ID del GPS</td><td><strong>Obligatorio.</strong> Es la llave que une el aparato con su ficha. Viene en la etiqueta del equipo.</td></tr>
+        <tr><td>Placa</td><td>Identifica al vehículo en el mapa, la lista y <strong>todas las alertas</strong>.</td></tr>
+        <tr><td>Nombre</td><td>Nombre amigable («Camión reparto»). Se usa si no hay placa.</td></tr>
+        <tr><td>Conductor</td><td>Aparece en las alertas y reportes: sabes quién iba manejando.</td></tr>
+        <tr><td>Límite vel.</td><td>A partir de cuántos km/h se genera la alerta de exceso. Por defecto 80.</td></tr>
+        <tr><td>N.º SIM y APN</td><td>Datos de la línea. El panel los usa para armarte los mensajes de configuración del equipo.</td></tr>
+        <tr><td>Modelo</td><td>Informativo, se muestra en la ficha.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Cada equipo de la lista tiene un botón <strong>📱 SMS</strong> que genera los mensajes exactos
+    para configurarlo, ya con la dirección de tu servidor. Está explicado en el
+    <a href="instalacion.html">manual de instalación</a>.</p>
+  <div class="note info">
+    <b>Registrar antes de instalar</b>
+    Puedes registrar un equipo aunque todavía no esté conectado. Cuando el GPS reporte por primera
+    vez, aparece ya identificado con su placa y conductor. Los que se conectan sin registrar salen
+    marcados como <strong>AUTO</strong> y con el nombre genérico «ST‑901».
+  </div>
+
+  <h3>Usuarios</h3>
+  <p>Crea las cuentas de tu equipo indicando correo, nombre, contraseña y rol. Un administrador
+    puede crear operadores; solo el super admin puede crear otros administradores.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <h3>Un vehículo aparece «Sin señal», ¿se dañó?</h3>
+  <p>No necesariamente. Significa que lleva más de 10 minutos sin reportar. Las causas típicas son:
+    está en un sótano o zona sin cobertura, se acabaron los datos de la SIM, o el equipo quedó sin
+    energía. Si vuelve la señal, se actualiza solo.</p>
+
+  <h3>¿Por qué el motor aparece encendido si está apagado?</h3>
+  <p>Ese dato viene del cable de ignición del equipo. Si marca al revés o siempre igual, el cable
+    quedó mal conectado en la instalación; hay que revisarlo en el vehículo.</p>
+
+  <h3>¿Cuánto tiempo se guarda la información?</h3>
+  <p>El historial de posiciones y alertas se guarda de forma permanente en el servidor. Los
+    recorridos y reportes del panel muestran las últimas 24 horas.</p>
+
+  <h3>¿Puedo verlo desde el celular?</h3>
+  <p>Sí. El panel se adapta a la pantalla del teléfono; entra con la misma dirección y tu usuario.</p>
+
+  <div class="foot">
+    DISMAP GPS · Manual de uso del panel. Si algo de lo aquí descrito no coincide con lo que ves en
+    pantalla, avísale al administrador del sistema.
+  </div>
+</div>
+</body>
+</html>

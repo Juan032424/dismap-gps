@@ -1,0 +1,32 @@
+# DISMAP GPS — proxy con HTTPS automático (Let's Encrypt).
+# El dominio se define en la variable DOMAIN del archivo .env.
+# Caddy pide el certificado solo y lo renueva antes de vencer.
+
+{$DOMAIN} {
+	reverse_proxy dismap-app:3000
+
+	# El panel usa WebSocket (mapa en vivo); Caddy gestiona el upgrade solo.
+	encode gzip
+
+	header {
+		# Fuerza HTTPS en el navegador durante un año
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}
+
+# Acceso directo por IP (sin certificado): se mantiene para no perder el acceso
+# si el DNS aún no propaga. Puedes borrar este bloque cuando el dominio funcione.
+http://{$SERVER_IP} {
+	reverse_proxy dismap-app:3000
+}

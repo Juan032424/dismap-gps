@@ -1,0 +1,552 @@
+/* ============================================================================
+   DISMAP GPS · Pantalla de acceso
+   Identidad: azul eléctrico #1E7FEF · navy #0E1A2B · verde "live" #16B364
+   Estructura: 1) tokens  2) layout  3) escenario/mapa  4) relato  5) tarjeta
+               6) campos  7) botón  8) pie  9) animaciones  10) responsive
+   ========================================================================= */
+
+/* ---------- 1. Tokens ---------------------------------------------------- */
+.lg {
+  /* Grounds: del negro azulado al navy de marca */
+  --void: #05090F;
+  --abyss: #070D18;
+  --navy: #0A1220;
+  --ink: #0E1A2B;
+
+  /* Azules */
+  --blue: #1E7FEF;          /* azul de marca */
+  --blue-600: #2563EB;      /* inicio del degradado */
+  --blue-500: #3B82F6;      /* fin del degradado */
+  --blue-400: #60A5FA;      /* realces */
+  --blue-300: #93C5FD;
+
+  --live: #16B364;          /* verde de marca: en línea */
+  --danger: #F87171;
+
+  /* Neutros con sesgo azul (elegidos, no heredados) */
+  --white: #F8FAFC;
+  --mist-90: rgba(248, 250, 252, .90);
+  --mist-64: rgba(226, 236, 248, .64);
+  --mist-46: rgba(203, 219, 238, .46);
+  --mist-28: rgba(190, 210, 235, .28);
+
+  /* Vidrio */
+  --glass: rgba(255, 255, 255, .045);
+  --glass-edge: rgba(255, 255, 255, .10);
+  --glass-lift: rgba(255, 255, 255, .16);
+
+  /* Curvas */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-soft: cubic-bezier(.4, 0, .2, 1);
+
+  --font: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+/* ---------- 2. Layout ---------------------------------------------------- */
+.lg {
+  position: fixed;
+  inset: 0;
+  z-index: 1200; /* por encima de cualquier control de Leaflet (usan ~1000) */
+  display: grid;
+  grid-template-columns: 60fr 40fr;
+  background: var(--void);
+  color: var(--white);
+  font-family: var(--font);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Salida hacia la aplicación */
+.lg.is-leaving {
+  animation: lgExit .55s var(--ease-soft) forwards;
+  pointer-events: none;
+}
+@keyframes lgExit {
+  to { opacity: 0; transform: scale(1.04); filter: blur(14px); }
+}
+
+/* ---------- 3. Escenario: mapa vivo -------------------------------------- */
+.lg-stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--abyss);
+}
+.lg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Capas de lectura sobre el mapa: viñeta, degradado lateral y luz azul */
+.lg-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lg-veil--vignette {
+  background:
+    radial-gradient(120% 90% at 30% 40%, transparent 30%, rgba(5, 9, 15, .55) 78%, rgba(5, 9, 15, .88) 100%);
+}
+.lg-veil--edge {
+  background: linear-gradient(100deg, rgba(5, 9, 15, .10) 40%, rgba(5, 9, 15, .78) 82%, var(--void) 100%);
+}
+.lg-veil--glow {
+  background:
+    radial-gradient(46% 40% at 22% 24%, rgba(30, 127, 239, .20), transparent 70%),
+    radial-gradient(38% 34% at 68% 76%, rgba(37, 99, 235, .16), transparent 72%);
+  mix-blend-mode: screen;
+}
+/* Trama de escaneo muy tenue: textura de instrumento, no de plantilla */
+.lg-veil--scan {
+  background: repeating-linear-gradient(
+    180deg, rgba(147, 197, 253, .028) 0 1px, transparent 1px 3px);
+  opacity: .5;
+}
+
+/* ---------- 4. Relato (columna izquierda) -------------------------------- */
+.lg-story {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(2rem, 4vw, 3.75rem);
+  will-change: transform;
+}
+
+.lg-mark { display: flex; align-items: center; gap: .85rem; }
+.lg-mark svg { flex: none; filter: drop-shadow(0 4px 14px rgba(30, 127, 239, .45)); }
+.lg-mark-name {
+  font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; line-height: 1;
+}
+.lg-mark-name span { color: var(--blue-400); }
+.lg-mark-tag {
+  font-family: var(--mono); font-size: .58rem; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--mist-46);
+  margin-top: .4rem;
+}
+
+.lg-hero { max-width: 34rem; }
+.lg-eyebrow {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-family: var(--mono); font-size: .62rem; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--blue-300);
+  background: rgba(30, 127, 239, .10);
+  border: 1px solid rgba(96, 165, 250, .22);
+  border-radius: 100px; padding: .38rem .85rem; margin-bottom: 1.5rem;
+}
+.lg-eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--live); box-shadow: 0 0 0 0 rgba(22, 179, 100, .6);
+  animation: lgPulse 2.4s infinite;
+}
+@keyframes lgPulse {
+  70% { box-shadow: 0 0 0 7px rgba(22, 179, 100, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 179, 100, 0); }
+}
+
+.lg-title {
+  font-size: clamp(2.6rem, 4.6vw, 4rem);
+  font-weight: 700; letter-spacing: -.035em; line-height: .98;
+  margin: 0 0 1.1rem; text-wrap: balance;
+  background: linear-gradient(180deg, #FFFFFF 20%, #A8C6EC 130%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lg-sub {
+  font-size: clamp(1rem, 1.35vw, 1.18rem); line-height: 1.6;
+  color: var(--mist-64); margin: 0; max-width: 30rem; text-wrap: pretty;
+}
+
+/* Capacidades */
+.lg-caps {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .7rem 1.4rem; margin-top: 2.5rem;
+}
+.lg-cap { display: flex; align-items: center; gap: .7rem; }
+.lg-cap-ico {
+  flex: none; width: 34px; height: 34px; border-radius: 10px;
+  display: grid; place-items: center;
+  color: var(--blue-300);
+  background: linear-gradient(160deg, rgba(96, 165, 250, .16), rgba(37, 99, 235, .06));
+  border: 1px solid rgba(96, 165, 250, .18);
+  transition: transform .4s var(--ease-out), border-color .3s, color .3s;
+}
+.lg-cap:hover .lg-cap-ico {
+  transform: translateY(-2px) scale(1.06);
+  border-color: rgba(96, 165, 250, .45);
+  color: var(--white);
+}
+.lg-cap-txt { font-size: .875rem; color: var(--mist-90); letter-spacing: -.005em; }
+
+/* Métricas al pie del relato */
+.lg-stats { display: flex; gap: 2.5rem; }
+.lg-stat-v {
+  font-size: 1.5rem; font-weight: 700; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+.lg-stat-k {
+  font-family: var(--mono); font-size: .58rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--mist-46); margin-top: .25rem;
+}
+
+/* ---------- 5. Panel y tarjeta de vidrio --------------------------------- */
+.lg-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 2rem clamp(1.5rem, 3vw, 3rem);
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(37, 99, 235, .12), transparent 65%),
+    linear-gradient(180deg, var(--abyss), var(--void));
+}
+/* Halo azul detrás de la tarjeta */
+.lg-panel::before {
+  content: "";
+  position: absolute; top: 50%; left: 50%;
+  width: min(560px, 90%); height: 60%;
+  transform: translate3d(-50%, -50%, 0);
+  background: radial-gradient(closest-side, rgba(37, 99, 235, .28), transparent 75%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: lgBreathe 9s var(--ease-soft) infinite;
+}
+@keyframes lgBreathe {
+  0%, 100% { opacity: .75; transform: translate3d(-50%, -50%, 0) scale(1); }
+  50% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1.09); }
+}
+
+.lg-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  padding: 40px;
+  border-radius: 24px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
+  border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    0 32px 80px -20px rgba(3, 7, 14, .85),
+    0 0 0 1px rgba(37, 99, 235, .06),
+    inset 0 1px 0 var(--glass-lift);
+  will-change: transform;
+  transition: transform .5s var(--ease-out);
+}
+/* Reflejo superior del cristal */
+.lg-card::before {
+  content: "";
+  position: absolute; inset: 0 0 auto; height: 1px; border-radius: 24px 24px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
+}
+
+.lg-card-head { text-align: center; margin-bottom: 2rem; }
+.lg-card-mark {
+  width: 60px; height: 60px; margin: 0 auto 1.25rem;
+  display: grid; place-items: center; border-radius: 18px;
+  background: linear-gradient(160deg, rgba(96, 165, 250, .18), rgba(37, 99, 235, .06));
+  border: 1px solid rgba(96, 165, 250, .22);
+  animation: lgFloat 6s var(--ease-soft) infinite;
+}
+@keyframes lgFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+.lg-card-title {
+  font-size: 1.85rem; font-weight: 700; letter-spacing: -.03em; margin: 0 0 .45rem;
+}
+.lg-card-sub { font-size: .925rem; color: var(--mist-64); margin: 0; }
+
+.lg-form { display: flex; flex-direction: column; gap: 1.05rem; }
+
+/* ---------- 6. Campos ---------------------------------------------------- */
+.lg-field { position: relative; }
+.lg-field input {
+  width: 100%; height: 56px;
+  padding: 20px 16px 6px 48px;
+  font-family: var(--font); font-size: .95rem; color: var(--white);
+  background: rgba(8, 14, 26, .55);
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 14px;
+  outline: none;
+  transition: border-color .3s var(--ease-soft), background .3s, box-shadow .3s;
+}
+.lg-field input::placeholder { color: var(--mist-28); opacity: 0; transition: opacity .3s; }
+.lg-field input:focus::placeholder { opacity: 1; }
+.lg-field input:hover { border-color: rgba(255, 255, 255, .16); }
+.lg-field input:focus {
+  border-color: rgba(59, 130, 246, .70);
+  background: rgba(10, 18, 32, .75);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .16), 0 0 26px -6px rgba(59, 130, 246, .45);
+}
+/* Autocompletado del navegador sin fondo blanco */
+.lg-field input:-webkit-autofill,
+.lg-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--white);
+  -webkit-box-shadow: 0 0 0 100px rgba(10, 18, 32, .95) inset;
+  caret-color: var(--white);
+}
+
+/* Etiqueta flotante */
+.lg-field label {
+  position: absolute; left: 48px; top: 50%;
+  transform: translate3d(0, -50%, 0);
+  font-size: .95rem; color: var(--mist-46);
+  pointer-events: none;
+  transition: transform .28s var(--ease-out), font-size .28s var(--ease-out), color .28s;
+}
+.lg-field input:focus + label,
+.lg-field input:not(:placeholder-shown) + label {
+  transform: translate3d(0, -22px, 0);
+  font-size: .66rem; letter-spacing: .06em; color: var(--blue-300);
+}
+
+.lg-field-ico {
+  position: absolute; left: 16px; top: 50%;
+  transform: translate3d(0, -50%, 0);
+  color: var(--mist-46); pointer-events: none;
+  transition: color .3s, transform .3s var(--ease-out);
+}
+.lg-field:focus-within .lg-field-ico { color: var(--blue-400); }
+
+/* Mostrar/ocultar contraseña */
+.lg-peek {
+  position: absolute; right: 8px; top: 50%;
+  transform: translate3d(0, -50%, 0);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 10px;
+  color: var(--mist-46); cursor: pointer;
+  transition: color .25s, background .25s;
+}
+.lg-peek:hover { color: var(--white); background: rgba(255, 255, 255, .06); }
+.lg-peek:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.lg-field:has(.lg-peek) input { padding-right: 52px; }
+
+/* Fila: recordarme + olvidé la contraseña */
+.lg-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-top: -.15rem;
+}
+.lg-check { display: flex; align-items: center; gap: .6rem; cursor: pointer; user-select: none; }
+.lg-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.lg-check-box {
+  width: 19px; height: 19px; border-radius: 6px; flex: none;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(8, 14, 26, .6);
+  display: grid; place-items: center;
+  transition: background .25s var(--ease-out), border-color .25s, transform .2s;
+}
+.lg-check-box svg { opacity: 0; transform: scale(.5); transition: opacity .2s, transform .28s var(--ease-out); }
+.lg-check input:checked + .lg-check-box {
+  background: linear-gradient(160deg, var(--blue-600), var(--blue-500));
+  border-color: transparent;
+}
+.lg-check input:checked + .lg-check-box svg { opacity: 1; transform: scale(1); }
+.lg-check input:focus-visible + .lg-check-box { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.lg-check:hover .lg-check-box { transform: scale(1.06); }
+.lg-check-txt { font-size: .85rem; color: var(--mist-64); }
+
+.lg-link {
+  font-size: .85rem; color: var(--blue-400); text-decoration: none;
+  background: none; border: 0; cursor: pointer; font-family: var(--font);
+  padding: 0; position: relative; transition: color .25s;
+}
+.lg-link::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background: currentColor; transform: scaleX(0); transform-origin: right;
+  transition: transform .35s var(--ease-out);
+}
+.lg-link:hover { color: var(--blue-300); }
+.lg-link:hover::after { transform: scaleX(1); transform-origin: left; }
+.lg-link:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 3px; border-radius: 3px; }
+
+/* Aviso de error / ayuda */
+.lg-note {
+  font-size: .84rem; line-height: 1.5; min-height: 1.1rem;
+  color: var(--danger); display: flex; align-items: flex-start; gap: .45rem;
+}
+.lg-note:empty { display: none; }
+.lg-note.is-info { color: var(--blue-300); }
+.lg-note.is-shake { animation: lgShake .45s var(--ease-soft); }
+@keyframes lgShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  30%, 70% { transform: translate3d(3px, 0, 0); }
+  50% { transform: translate3d(-1px, 0, 0); }
+}
+
+/* ---------- 7. Botón principal ------------------------------------------- */
+.lg-submit {
+  position: relative; overflow: hidden;
+  height: 56px; width: 100%;
+  border: 0; border-radius: 16px;
+  font-family: var(--font); font-size: .98rem; font-weight: 600; letter-spacing: .01em;
+  color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+  box-shadow: 0 10px 30px -10px rgba(37, 99, 235, .75), inset 0 1px 0 rgba(255, 255, 255, .22);
+  transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), filter .3s;
+  will-change: transform;
+  margin-top: .35rem;
+}
+.lg-submit-txt { display: inline-flex; align-items: center; gap: .55rem; transition: opacity .25s, transform .25s; }
+.lg-submit:hover:not(:disabled) {
+  box-shadow: 0 18px 44px -12px rgba(59, 130, 246, .9), inset 0 1px 0 rgba(255, 255, 255, .3);
+  filter: brightness(1.06);
+}
+.lg-submit:active:not(:disabled) { transform: scale(.985); transition-duration: .1s; }
+.lg-submit:focus-visible { outline: 2px solid var(--blue-300); outline-offset: 3px; }
+.lg-submit:disabled { cursor: progress; }
+.lg-submit:disabled .lg-submit-txt { opacity: 0; transform: scale(.9); }
+/* Indicador de carga (el estado deshabilitado lo activa el flujo de acceso) */
+.lg-submit::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 20px; height: 20px; margin: -10px 0 0 -10px;
+  border: 2px solid rgba(255, 255, 255, .3); border-top-color: #fff;
+  border-radius: 50%; opacity: 0;
+  transition: opacity .2s;
+}
+.lg-submit:disabled::after { opacity: 1; animation: lgSpin .7s linear infinite; }
+@keyframes lgSpin { to { transform: rotate(360deg); } }
+
+/* Onda al pulsar */
+.lg-ripple {
+  position: absolute; border-radius: 50%; transform: scale(0);
+  background: rgba(255, 255, 255, .38); pointer-events: none;
+  animation: lgRipple .65s var(--ease-out) forwards;
+}
+@keyframes lgRipple { to { transform: scale(2.6); opacity: 0; } }
+
+/* ---------- 8. Pie de la tarjeta ----------------------------------------- */
+.lg-meta {
+  margin-top: 1.75rem; padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  font-family: var(--mono); font-size: .66rem; color: var(--mist-46);
+}
+.lg-status { display: inline-flex; align-items: center; gap: .45rem; }
+.lg-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--mist-46); transition: background .4s, box-shadow .4s;
+}
+.lg-status.is-online .lg-dot { background: var(--live); box-shadow: 0 0 10px rgba(22, 179, 100, .8); }
+.lg-status.is-offline .lg-dot { background: var(--danger); box-shadow: 0 0 10px rgba(248, 113, 113, .7); }
+
+/* ---------- 9. Entrada escalonada ---------------------------------------- */
+.lg-rise {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  filter: blur(10px);
+  animation: lgRise .95s var(--ease-out) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes lgRise {
+  to { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+}
+.lg-card.lg-rise { animation-name: lgRiseCard; }
+@keyframes lgRiseCard {
+  from { opacity: 0; transform: translate3d(0, 30px, 0) scale(.97); filter: blur(14px); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+}
+
+/* ---------- 10. Adaptación a pantallas -----------------------------------
+   Cobertura: 4K/proyector grande (≥1700) · escritorio · portátil bajo
+   (alturas ≤820) · proyector 4:3 (1024×768) · tablet · teléfono vertical
+   y horizontal. El mapa cede protagonismo al formulario al estrecharse. */
+
+/* Pantallas grandes: 2K/4K, TV y proyectores de salón */
+@media (min-width: 1700px) {
+  .lg-card { max-width: 560px; padding: 48px; }
+  .lg-hero { max-width: 38rem; }
+  .lg-sub { max-width: 34rem; }
+  .lg-caps { gap: .85rem 1.75rem; margin-top: 3rem; }
+  .lg-cap-txt { font-size: .95rem; }
+  .lg-stat-v { font-size: 1.7rem; }
+}
+
+@media (max-width: 1180px) {
+  .lg { grid-template-columns: 52fr 48fr; }
+  .lg-caps { grid-template-columns: 1fr; gap: .55rem; }
+  .lg-stats { gap: 1.75rem; }
+}
+
+@media (max-width: 940px) {
+  /* El mapa pasa a ser atmósfera de fondo: el formulario toma el protagonismo */
+  .lg { display: block; overflow-y: auto; }
+  .lg-stage { position: relative; height: 58vh; }
+  /* En columna, el oscurecido lateral se vuelve vertical (hacia el formulario) */
+  .lg-veil--edge {
+    background: linear-gradient(180deg, rgba(5, 9, 15, .05) 30%, rgba(5, 9, 15, .72) 85%, var(--void) 100%);
+  }
+  .lg-story {
+    justify-content: flex-start;
+    gap: 1.5rem;
+    padding: clamp(1.25rem, 5vw, 2.5rem);
+    height: 100%;
+  }
+  .lg-hero .lg-title { font-size: clamp(2rem, 7.5vw, 2.9rem); }
+  .lg-caps, .lg-stats { display: none; }
+  .lg-panel {
+    position: relative; z-index: 2;
+    margin-top: -4.5rem;               /* la tarjeta “sube” sobre el mapa */
+    background: linear-gradient(180deg, transparent, rgba(5, 9, 15, .82) 20%, var(--void) 55%);
+    padding: 0 clamp(1rem, 4vw, 2rem) 2.5rem;
+    display: grid; place-items: center;
+  }
+}
+
+/* Teléfono vertical */
+@media (max-width: 560px) {
+  .lg-stage { height: 44vh; min-height: 300px; }
+  .lg-card { padding: 28px 20px; border-radius: 20px; }
+  .lg-card-title { font-size: 1.55rem; }
+  .lg-card-mark { width: 52px; height: 52px; margin-bottom: 1rem; }
+  .lg-meta { font-size: .6rem; gap: .5rem; justify-content: center; }
+  .lg-row { flex-wrap: wrap; gap: .6rem; }
+  .lg-mark-name { font-size: 1.2rem; }
+  .lg-mark svg { width: 34px; height: 34px; }
+}
+
+/* Teléfono horizontal (alto muy corto): el mapa se reduce al mínimo */
+@media (max-width: 940px) and (max-height: 520px) {
+  .lg-stage { height: 200px; min-height: 0; }
+  .lg-hero .lg-sub, .lg-eyebrow { display: none; }
+  .lg-hero .lg-title { font-size: 1.6rem; }
+  .lg-panel { margin-top: -2rem; }
+}
+
+/* Alturas cortas en horizontal: portátiles 720/768 y proyectores 4:3 */
+@media (max-height: 820px) and (min-width: 941px) {
+  .lg-story { padding: clamp(1.5rem, 3vw, 2.5rem); }
+  .lg-title { font-size: clamp(2.2rem, 3.8vw, 3.1rem); }
+  .lg-caps { margin-top: 1.4rem; gap: .5rem 1.3rem; }
+  .lg-cap-ico { width: 30px; height: 30px; border-radius: 9px; }
+  .lg-card { padding: 30px 34px; }
+  .lg-card-head { margin-bottom: 1.4rem; }
+  .lg-card-mark { width: 48px; height: 48px; margin-bottom: .9rem; }
+  .lg-card-title { font-size: 1.6rem; }
+  .lg-form { gap: .85rem; }
+  .lg-meta { margin-top: 1.2rem; padding-top: .9rem; }
+  .lg-stats { display: none; }
+}
+/* Alturas muy cortas en escritorio: prioridad total al formulario */
+@media (max-height: 640px) and (min-width: 941px) {
+  .lg-eyebrow { display: none; }
+  .lg-caps { display: none; }
+  .lg-field input { height: 50px; }
+  .lg-submit { height: 50px; }
+}
+
+/* ---------- Accesibilidad: movimiento reducido --------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .lg *,
+  .lg *::before,
+  .lg *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .lg-rise { opacity: 1; transform: none; filter: none; }
+}

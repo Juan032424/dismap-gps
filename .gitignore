@@ -1,0 +1,29 @@
+# Dependencias y compilados
+node_modules/
+dist/
+
+# Secretos — NUNCA subir (usa .env.example / .env.prod.example como plantilla)
+.env
+.env.*
+!.env.example
+!.env.prod.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Registros y datos de las pruebas de campo con el celular
+*.log
+cola.pend
+recorrido.jsonl
+recorrido.gpx
+recorrido.csv
+
+# Volúmenes generados por Docker/Caddy en el servidor
+caddy_data/
+caddy_config/
+
+# Herramientas y sistema
+.claude/settings.local.json
+.DS_Store
+Thumbs.db

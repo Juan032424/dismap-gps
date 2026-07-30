@@ -1,0 +1,82 @@
+# DISMAP GPS — despliegue de producción (un solo servidor con Docker).
+# Uso:  docker compose -f docker-compose.prod.yml up -d --build
+# Requiere un archivo .env en esta carpeta (ver .env.prod.example).
+
+services:
+  db:
+    image: timescale/timescaledb-ha:pg16   # PostgreSQL + PostGIS + TimescaleDB
+    container_name: dismap-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: dismap
+    volumes:
+      - dbdata:/home/postgres/pgdata/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # La base NO se expone al exterior: solo la usa el contenedor de la app.
+
+  redis:
+    image: redis:7-alpine
+    container_name: dismap-redis
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: dismap-app
+    restart: unless-stopped
+    depends_on: [db, redis]
+    environment:
+      HTTP_PORT: 3000
+      TCP_H02_PORT: 5013
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/dismap
+      REDIS_URL: redis://redis:6379
+      H02_ACK_HEARTBEAT: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES: ${JWT_EXPIRES:-12h}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD}
+    ports:
+      # El puerto 80/443 los atiende Caddy (HTTPS). Aquí solo se publica el
+      # puerto TCP de los GPS, que va directo y sin cifrado (los equipos no
+      # hablan TLS).
+      - "5013:5013"
+
+  # Puente HTTP → H02: recibe puntos de GPSLogger (app del celular) y los
+  # reenvía al listener GPS como si vinieran de un ST-901. Sirve para rastrear
+  # en vivo con el teléfono mientras llegan los equipos físicos.
+  bridge:
+    build: ./bridge
+    container_name: dismap-bridge
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      BRIDGE_PORT: 8088
+      GPS_HOST: app
+      GPS_TCP_PORT: 5013
+      BRIDGE_TOKEN: ${BRIDGE_TOKEN}
+    ports:
+      - "8088:8088"
+
+  # Proxy con HTTPS automático (Let's Encrypt). Renueva los certificados solo.
+  caddy:
+    image: caddy:2-alpine
+    container_name: dismap-caddy
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMAIN: ${DOMAIN}
+      SERVER_IP: ${SERVER_IP}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # certificados (no borrar: evita rehacer el trámite)
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+
+volumes:
+  dbdata:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
