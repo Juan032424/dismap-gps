@@ -91,6 +91,37 @@ poner **Caddy** como reverse proxy delante (obtiene el certificado solo):
 
 Si quieres, te preparo el servicio de Caddy listo cuando tengas el dominio.
 
+## Despliegue automático (CI/CD con GitHub Actions)
+
+Desde que el proyecto vive en GitHub, cada `git push` a `main` dispara
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): sincroniza el
+código al VPS por SSH (`rsync`, sin tocar el `.env` del servidor) y ejecuta
+`docker compose -f docker-compose.prod.yml up -d --build`. Ya no hace falta
+subir manualmente con SCP.
+
+**Configuración única (una sola vez):**
+
+1. Abre en el navegador, ya logueado como `Juan032424`:
+   `https://github.com/Juan032424/dismap-gps/settings/secrets/actions`
+2. **New repository secret** → nombre `DEPLOY_SSH_KEY` → en "Value" pega el
+   contenido completo de la llave privada del servidor (incluyendo las líneas
+   `-----BEGIN...` y `-----END...`). Para verla en tu PC sin exponerla en
+   ningún chat:
+   ```powershell
+   notepad $env:USERPROFILE\.ssh\dismap_dev
+   ```
+   Selecciona todo (Ctrl+A), copia (Ctrl+C) y pégalo directo en GitHub.
+3. Guarda. Con eso el pipeline queda armado — no se necesita ningún otro secreto
+   (el host y el usuario están fijos en el propio workflow).
+
+**Seguimiento:** pestaña **Actions** del repositorio en GitHub — cada push
+muestra ahí el progreso y el log de la sincronización y el build. También se
+puede lanzar a mano con el botón **Run workflow** (usa `workflow_dispatch`).
+
+**Importante:** el `.env` real del servidor (contraseñas, `JWT_SECRET`) nunca
+se toca ni se sube — está excluido del `rsync` a propósito. Si cambias
+variables de entorno, sigue haciéndose a mano por SSH.
+
 ## Operación diaria
 
 ```bash
