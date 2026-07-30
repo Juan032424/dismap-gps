@@ -20,21 +20,26 @@ jobs:
       - name: Configurar SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || {
+            echo "::error::La llave privada en el secreto DEPLOY_SSH_KEY no es valida (revisa que se haya pegado completa, incluyendo las lineas BEGIN/END)."
+            exit 1
+          }
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          echo "SSH_OPTS=-i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" >> "$GITHUB_ENV"
 
       - name: Sincronizar codigo al servidor
         run: |
           rsync -az --delete \
             --exclude='.git' --exclude='.github' --exclude='node_modules' \
             --exclude='.env' --exclude='dist' \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "ssh $SSH_OPTS" \
             ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
       - name: Reconstruir y reiniciar contenedores
         run: |
-          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
             cd $DEPLOY_PATH &&
             docker compose -f docker-compose.prod.yml up -d --build &&
             docker image prune -f
